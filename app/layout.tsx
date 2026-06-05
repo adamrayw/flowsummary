@@ -10,8 +10,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'FlowSummary - Transform Information into Insights',
+  description: 'Transform raw information into professional summaries and reports with AI',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -30,6 +30,7 @@ export const metadata: Metadata = {
     ],
     apple: '/apple-icon.png',
   },
+  colorScheme: 'dark',
 }
 
 export default function RootLayout({
@@ -38,8 +39,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="font-sans antialiased">
+    <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable}`}>
+      <body className="font-sans antialiased bg-background text-foreground">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
