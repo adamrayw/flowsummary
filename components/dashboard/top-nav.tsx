@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Bell, ChevronDown, LogOut, Settings, User, Menu } from 'lucide-react'
+import { buildAuthLogoutUrl } from '@/lib/raytech-account'
+import { useAuthSession } from '@/hooks/use-auth-session'
 
 interface TopNavProps {
   onMenuClick?: () => void
@@ -11,6 +13,22 @@ interface TopNavProps {
 
 export default function TopNav({ onMenuClick }: TopNavProps) {
   const [showMenu, setShowMenu] = useState(false)
+  const { data: session } = useAuthSession()
+  const userName =
+    session?.user?.name?.trim() ||
+    session?.user?.email?.split('@')[0] ||
+    'RayTech User'
+  const userEmail = session?.user?.email || 'Signed in with RayTech Account'
+  const initials = useMemo(() => {
+    const parts = userName.split(' ').filter(Boolean)
+    if (parts.length === 0) return 'FS'
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  }, [userName])
+
+  const handleSignOut = () => {
+    window.location.href = buildAuthLogoutUrl(`${window.location.origin}/signin`)
+  }
 
   return (
     <div className="border-b border-border bg-card">
@@ -46,9 +64,10 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
               className="flex items-center gap-2 px-3 py-2 hover:bg-border rounded-lg transition-colors"
             >
               <Avatar className="w-8 h-8">
-                <AvatarImage src="https://avatar.vercel.sh/user" alt="User" />
-                <AvatarFallback>US</AvatarFallback>
+                <AvatarImage src={`https://avatar.vercel.sh/${encodeURIComponent(userEmail)}`} alt={userName} />
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
+              <span className="hidden sm:inline max-w-36 truncate text-sm text-foreground">{userName}</span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </button>
 
@@ -56,8 +75,8 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
             {showMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg z-50">
                 <div className="p-3 border-b border-border">
-                  <p className="text-sm font-medium text-foreground">user@example.com</p>
-                  <p className="text-xs text-muted-foreground">Premium Plan</p>
+                  <p className="text-sm font-medium text-foreground truncate">{userName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
                 </div>
                 <div className="p-2">
                   <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-border rounded transition-colors">
@@ -68,7 +87,10 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
                     <Settings className="w-4 h-4" />
                     Settings
                   </button>
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-border rounded transition-colors text-red-400">
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-border rounded transition-colors text-red-400"
+                  >
                     <LogOut className="w-4 h-4" />
                     Sign Out
                   </button>

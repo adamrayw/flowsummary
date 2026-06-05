@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flowsummary-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: flowsummary
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      - flowsummary_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  flowsummary_postgres_data:

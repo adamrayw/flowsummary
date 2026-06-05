@@ -1,17 +1,37 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Zap, FileText, Users, Lightbulb, Clock, Shield, Sparkles, Play, Copy, Check } from 'lucide-react'
+import { buildAuthLogoutUrl } from '@/lib/raytech-account'
+import { useAuthSession } from '@/hooks/use-auth-session'
+import { ArrowRight, Zap, FileText, Users, Lightbulb, Clock, Shield, Sparkles, Play, Copy, Check, ChevronDown, LayoutDashboard, LogOut } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 export default function Page() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const { data: session, status } = useAuthSession()
+  const isAuthenticated = status === 'authenticated'
+  const userName =
+    session?.user?.name?.trim() ||
+    session?.user?.email?.split('@')[0] ||
+    'RayTech User'
+  const userEmail = session?.user?.email || ''
+  const initials = useMemo(() => {
+    const parts = userName.split(' ').filter(Boolean)
+    if (parts.length === 0) return 'FS'
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  }, [userName])
 
   const copyToClipboard = (text: string, index: number) => {
     navigator.clipboard.writeText(text)
     setCopiedIndex(index)
     setTimeout(() => setCopiedIndex(null), 2000)
+  }
+
+  const handleSignOut = () => {
+    window.location.href = buildAuthLogoutUrl(`${window.location.origin}/signin`)
   }
 
   return (
@@ -30,12 +50,55 @@ export default function Page() {
             <a href="#usecases" className="text-sm text-muted-foreground hover:text-foreground transition">Use Cases</a>
             <a href="#examples" className="text-sm text-muted-foreground hover:text-foreground transition">Examples</a>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm">Sign in</Button>
-            <Link href="/dashboard">
-              <Button size="sm" className="bg-primary hover:bg-primary/90">Get Started</Button>
-            </Link>
-          </div>
+          {isAuthenticated ? (
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm hover:bg-border transition-colors"
+              >
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+                  {initials}
+                </span>
+                <span className="hidden sm:inline max-w-36 truncate">{userName}</span>
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </button>
+
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-56 rounded-lg border border-border bg-card shadow-lg z-50">
+                  <div className="border-b border-border p-3">
+                    <p className="truncate text-sm font-medium text-foreground">{userName}</p>
+                    <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
+                  </div>
+                  <div className="p-2">
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-2 rounded px-3 py-2 text-sm text-foreground hover:bg-border transition-colors"
+                      onClick={() => setShowProfileMenu(false)}
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-red-400 hover:bg-border transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Link href="/signin">
+                <Button variant="ghost" size="sm">Sign in</Button>
+              </Link>
+              <Link href="/signup">
+                <Button size="sm" className="bg-primary hover:bg-primary/90">Get Started</Button>
+              </Link>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -56,7 +119,7 @@ export default function Page() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Link href="/dashboard">
+            <Link href="/signup">
               <Button size="lg" className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
                 Start Summarizing Free
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -280,14 +343,16 @@ export default function Page() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/dashboard">
+            <Link href="/signup">
               <Button size="lg" className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
                 Get Started Free
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="w-full sm:w-auto">
-              Sign in with RayTech Account
-            </Button>
+            <Link href="/signin">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                Sign in with RayTech Account
+              </Button>
+            </Link>
           </div>
 
           <p className="text-sm text-muted-foreground mt-8">
@@ -328,7 +393,7 @@ export default function Page() {
             <div>
               <h4 className="font-medium text-sm mb-4">RayTech</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground">RayTech Account</a></li>
+                <li><Link href="/signin" className="text-sm text-muted-foreground hover:text-foreground">RayTech Account</Link></li>
               </ul>
             </div>
           </div>

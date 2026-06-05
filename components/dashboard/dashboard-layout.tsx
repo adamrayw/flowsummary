@@ -3,20 +3,41 @@
 import React, { useState } from 'react'
 import TopNav from './top-nav'
 import HistorySidebar from './history-sidebar'
-import { Menu, X } from 'lucide-react'
+import type { SummaryListItem } from '@/lib/summary-types'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
+  summaries?: SummaryListItem[]
+  activeSummaryId?: string | null
+  isHistoryLoading?: boolean
+  onNewSummary?: () => void
+  onSelectSummary?: (summaryId: string) => void
+  onDeleteSummary?: (summaryId: string) => void
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout({
+  children,
+  summaries = [],
+  activeSummaryId = null,
+  isHistoryLoading = false,
+  onNewSummary,
+  onSelectSummary,
+  onDeleteSummary,
+}: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar - Hidden on mobile, visible on md and up */}
       <div className="hidden md:block">
-        <HistorySidebar />
+        <HistorySidebar
+          summaries={summaries}
+          activeSummaryId={activeSummaryId}
+          isLoading={isHistoryLoading}
+          onNewSummary={onNewSummary}
+          onSelectSummary={onSelectSummary}
+          onDeleteSummary={onDeleteSummary}
+        />
       </div>
 
       {/* Mobile Sidebar Overlay */}
@@ -33,7 +54,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <HistorySidebar />
+        <HistorySidebar
+          summaries={summaries}
+          activeSummaryId={activeSummaryId}
+          isLoading={isHistoryLoading}
+          onNewSummary={() => {
+            setSidebarOpen(false)
+            onNewSummary?.()
+          }}
+          onSelectSummary={(summaryId) => {
+            setSidebarOpen(false)
+            onSelectSummary?.(summaryId)
+          }}
+          onDeleteSummary={onDeleteSummary}
+        />
       </div>
 
       {/* Main Content */}

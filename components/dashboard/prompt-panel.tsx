@@ -2,26 +2,12 @@
 
 import React from 'react'
 import { Textarea } from '@/components/ui/textarea'
+import { TEMPLATE_PROMPTS } from '@/lib/constants'
 
 interface PromptPanelProps {
   value: string
   onChange: (value: string) => void
   selectedTemplate: string | null
-}
-
-const TEMPLATE_PROMPTS: Record<string, string> = {
-  'executive-summary':
-    'Create a concise executive summary suitable for C-level executives. Focus on key metrics, business impact, and strategic implications.',
-  'meeting-summary':
-    'Summarize this meeting transcript. Include attendees, key discussion points, decisions made, and action items with owners.',
-  'research-brief':
-    'Create a research brief highlighting main findings, methodology, data quality, and implications for business decisions.',
-  'project-status':
-    'Generate a project status report covering completion percentage, milestones achieved, blockers, and next steps.',
-  'competitive-analysis':
-    'Analyze the competitive landscape. Include competitor overview, strengths, weaknesses, market positioning, and recommendations.',
-  'technical-spec':
-    'Create a technical specification document. Include system architecture, components, data flows, and implementation considerations.',
 }
 
 export default function PromptPanel({ value, onChange, selectedTemplate }: PromptPanelProps) {
