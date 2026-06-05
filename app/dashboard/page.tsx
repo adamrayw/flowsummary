@@ -59,14 +59,14 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="w-full max-w-7xl mx-auto px-8 py-8">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-8">
         {!showOutput ? (
           <>
             {/* Hero Section */}
             <HeroSection />
 
             {/* Main Workspace */}
-            <div className="grid grid-cols-2 gap-8 mb-8 h-[400px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 h-auto md:h-[400px]">
               {/* Source Panel */}
               <div>
                 <SourcePanel value={sourceText} onChange={setSourceText} />

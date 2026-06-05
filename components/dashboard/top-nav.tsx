@@ -3,20 +3,32 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Bell, ChevronDown, LogOut, Settings, User } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Settings, User, Menu } from 'lucide-react'
 
-export default function TopNav() {
+interface TopNavProps {
+  onMenuClick?: () => void
+}
+
+export default function TopNav({ onMenuClick }: TopNavProps) {
   const [showMenu, setShowMenu] = useState(false)
 
   return (
     <div className="border-b border-border bg-card">
-      <div className="flex items-center justify-between px-8 py-4">
+      <div className="flex items-center justify-between px-4 md:px-8 py-4">
+        {/* Hamburger Menu - Mobile Only */}
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-2 hover:bg-border rounded-lg transition-colors"
+        >
+          <Menu className="w-5 h-5 text-foreground" />
+        </button>
+
         {/* Logo */}
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">F</span>
           </div>
-          <span className="font-semibold text-lg text-foreground">FlowSummary</span>
+          <span className="font-semibold text-lg text-foreground hidden sm:inline">FlowSummary</span>
         </div>
 
         {/* Right Section */}
