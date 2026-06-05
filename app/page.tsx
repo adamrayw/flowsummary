@@ -42,6 +42,10 @@ export default function Page() {
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 md:py-32">
         <div className="max-w-5xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center gap-2 mb-2 px-3 py-1 rounded-full bg-muted/50 border border-border">
+            <span className="text-xs text-muted-foreground">A Product by <span className="font-semibold text-foreground">raytech.cloud</span></span>
+          </div>
+          
           <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
             <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-primary">AI-Powered Report Generation</span>
@@ -329,7 +333,8 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
+          <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground space-y-2">
+            <p>A Product by <span className="font-semibold text-foreground">raytech.cloud</span></p>
             <p>Powered by RayTech Account</p>
           </div>
         </div>
