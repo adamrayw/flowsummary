@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { FlowSummaryLogo } from '@/components/brand/flowsummary-logo'
 import { buildAuthLogoutUrl } from '@/lib/raytech-account'
 import { useAuthSession } from '@/hooks/use-auth-session'
 import { ArrowRight, Zap, FileText, Users, Lightbulb, Clock, Shield, Sparkles, Play, Copy, Check, ChevronDown, LayoutDashboard, LogOut } from 'lucide-react'
@@ -40,9 +41,7 @@ export default function Page() {
       <nav className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <FlowSummaryLogo className="h-8 w-8 rounded-lg" priority />
             <span className="font-semibold text-lg">FlowSummary</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
@@ -366,7 +365,10 @@ export default function Page() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-5 gap-8 mb-8">
             <div>
-              <h3 className="font-semibold mb-4">FlowSummary</h3>
+              <div className="mb-4 flex items-center gap-2">
+                <FlowSummaryLogo className="h-8 w-8 rounded-lg" />
+                <h3 className="font-semibold">FlowSummary</h3>
+              </div>
               <p className="text-sm text-muted-foreground">Part of the RayTech ecosystem.</p>
             </div>
             <div>

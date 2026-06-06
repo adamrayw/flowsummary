@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { FlowSummaryLogo } from '@/components/brand/flowsummary-logo'
 import { Bell, ChevronDown, LogOut, Settings, User, Menu } from 'lucide-react'
 import { buildAuthLogoutUrl } from '@/lib/raytech-account'
 import { useAuthSession } from '@/hooks/use-auth-session'
@@ -43,9 +44,7 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
 
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">F</span>
-          </div>
+          <FlowSummaryLogo className="h-8 w-8 rounded-lg" priority />
           <span className="font-semibold text-lg text-foreground hidden sm:inline">FlowSummary</span>
         </div>
 
