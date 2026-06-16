@@ -175,14 +175,14 @@ export default function DashboardPage() {
             <HeroSection />
 
             {/* Main Workspace */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 h-auto md:h-[400px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 items-stretch">
               {/* Source Panel */}
-              <div>
+              <div className="min-h-[520px]">
                 <SourcePanel value={sourceText} onChange={setSourceText} />
               </div>
 
               {/* Prompt Panel */}
-              <div>
+              <div className="min-h-[520px]">
                 <PromptPanel
                   value={promptText}
                   onChange={setPromptText}

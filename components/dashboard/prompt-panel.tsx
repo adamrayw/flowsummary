@@ -28,7 +28,7 @@ export default function PromptPanel({ value, onChange, selectedTemplate }: Promp
         placeholder={defaultPrompt || 'Enter custom instructions for summarization...'}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 resize-none bg-card border-border text-foreground placeholder-muted-foreground focus-visible:ring-primary"
+        className="flex-1 min-h-[220px] resize-none overflow-y-auto [field-sizing:fixed] bg-card border-border text-foreground placeholder-muted-foreground focus-visible:ring-primary"
       />
 
       <p className="text-xs text-muted-foreground">
