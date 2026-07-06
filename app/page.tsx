@@ -4,13 +4,124 @@ import { Button } from '@/components/ui/button'
 import { FlowSummaryLogo } from '@/components/brand/flowsummary-logo'
 import { buildAuthLogoutUrl } from '@/lib/raytech-account'
 import { useAuthSession } from '@/hooks/use-auth-session'
-import { ArrowRight, Zap, FileText, Users, Lightbulb, Clock, Shield, Sparkles, Play, Copy, Check, ChevronDown, LayoutDashboard, LogOut } from 'lucide-react'
+import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  Check,
+  ChevronDown,
+  ClipboardCheck,
+  Database,
+  FileCheck2,
+  FileText,
+  Gauge,
+  LayoutDashboard,
+  LineChart,
+  ListChecks,
+  LockKeyhole,
+  LogOut,
+  Presentation,
+  SearchCheck,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  Upload,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 
+const thinkingSteps = [
+  'Reading document',
+  'Detecting document type',
+  'Extracting KPIs',
+  'Finding anomalies',
+  'Understanding business context',
+  'Predicting user intent',
+  'Selecting best outputs',
+]
+
+const analystFlow = [
+  { label: 'Upload', detail: 'PDF, Excel, Word, CSV, or raw text' },
+  { label: 'Understand', detail: 'Type, structure, language, dates, entities' },
+  { label: 'Explore', detail: 'Patterns, missing values, duplicates, anomalies' },
+  { label: 'Infer intent', detail: 'Likely objective, audience, and decision context' },
+  { label: 'Recommend', detail: 'Best analysis and output for this document' },
+  { label: 'Generate', detail: 'Executive-ready reports, briefs, and action plans' },
+]
+
+const documents = [
+  'Attendance',
+  'Finance',
+  'Sales',
+  'HR',
+  'Inventory',
+  'Government',
+  'Research',
+  'Contracts',
+  'Medical',
+  'Construction',
+  'Legal',
+  'Meeting Minutes',
+  'Invoices',
+]
+
+const capabilities = [
+  {
+    icon: SearchCheck,
+    title: 'Understands',
+    text: 'Detects document type, structure, metrics, dimensions, language, and business context automatically.',
+  },
+  {
+    icon: LineChart,
+    title: 'Explores',
+    text: 'Looks for trends, anomalies, duplicate records, missing values, unusual distributions, and risks.',
+  },
+  {
+    icon: Target,
+    title: 'Infers',
+    text: 'Predicts the likely objective: executive summary, audit, dashboard, risk review, or investigation.',
+  },
+  {
+    icon: ListChecks,
+    title: 'Recommends',
+    text: 'Prioritizes outcome-driven actions based on what the document actually contains.',
+  },
+  {
+    icon: Presentation,
+    title: 'Generates',
+    text: 'Creates management summaries, board briefs, action plans, and professional reports.',
+  },
+]
+
+const enterpriseFeatures = [
+  { icon: Gauge, title: 'Document health score', text: 'Completeness, consistency, reliability, missing values, duplicates, and risk signals.' },
+  { icon: Database, title: 'Structured analysis history', text: 'Classifications, profiles, recommendations, and generated reports are saved for review.' },
+  { icon: ShieldCheck, title: 'RayTech Account access', text: 'Built into the RayTech ecosystem with authenticated workspace flows.' },
+  { icon: LockKeyhole, title: 'Enterprise-ready posture', text: 'Designed for controlled document workflows, repeatable outputs, and audit-aware teams.' },
+]
+
+const examples = [
+  {
+    title: 'Attendance anomaly investigation',
+    input: 'Monthly attendance file with employee, region, check-in, check-out, status, and leave reason.',
+    output: 'Flags unusual absence patterns, missing leave reasons, late-arrival clusters, and manager actions.',
+  },
+  {
+    title: 'Financial board brief',
+    input: 'Finance report with revenue, expense, profit, budget, variance, and reporting period.',
+    output: 'Explains performance movement, risk areas, budget concerns, and leadership recommendations.',
+  },
+  {
+    title: 'Contract risk review',
+    input: 'Vendor agreement with obligations, payment terms, renewal windows, and termination language.',
+    output: 'Extracts key dates, operational obligations, renewal risks, and negotiation follow-ups.',
+  },
+]
+
 export default function Page() {
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [activeDemoStep, setActiveDemoStep] = useState(0)
   const { data: session, status } = useAuthSession()
   const isAuthenticated = status === 'authenticated'
   const userName =
@@ -25,63 +136,59 @@ export default function Page() {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
   }, [userName])
 
-  const copyToClipboard = (text: string, index: number) => {
-    navigator.clipboard.writeText(text)
-    setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex(null), 2000)
-  }
-
   const handleSignOut = () => {
     window.location.href = buildAuthLogoutUrl(`${window.location.origin}/signin`)
   }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <Link href="/" className="flex items-center gap-2">
             <FlowSummaryLogo className="h-8 w-8 rounded-lg" priority />
-            <span className="font-semibold text-lg">FlowSummary</span>
+            <span className="text-lg font-semibold">FlowSummary</span>
+          </Link>
+
+          <div className="hidden items-center gap-8 md:flex">
+            <a href="#thinking" className="text-sm text-muted-foreground transition hover:text-foreground">How it thinks</a>
+            <a href="#documents" className="text-sm text-muted-foreground transition hover:text-foreground">Documents</a>
+            <a href="#comparison" className="text-sm text-muted-foreground transition hover:text-foreground">Comparison</a>
+            <a href="#examples" className="text-sm text-muted-foreground transition hover:text-foreground">Examples</a>
           </div>
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition">Features</a>
-            <a href="#usecases" className="text-sm text-muted-foreground hover:text-foreground transition">Use Cases</a>
-            <a href="#examples" className="text-sm text-muted-foreground hover:text-foreground transition">Examples</a>
-          </div>
+
           {isAuthenticated ? (
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm hover:bg-border transition-colors"
+                className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm transition hover:bg-border"
               >
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
                   {initials}
                 </span>
-                <span className="hidden sm:inline max-w-36 truncate">{userName}</span>
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                <span className="hidden max-w-36 truncate sm:inline">{userName}</span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </button>
 
               {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-56 rounded-lg border border-border bg-card shadow-lg z-50">
+                <div className="absolute right-0 z-50 mt-2 w-56 rounded-lg border border-border bg-card shadow-lg">
                   <div className="border-b border-border p-3">
-                    <p className="truncate text-sm font-medium text-foreground">{userName}</p>
+                    <p className="truncate text-sm font-medium">{userName}</p>
                     <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
                   </div>
                   <div className="p-2">
                     <Link
                       href="/dashboard"
-                      className="flex items-center gap-2 rounded px-3 py-2 text-sm text-foreground hover:bg-border transition-colors"
+                      className="flex items-center gap-2 rounded px-3 py-2 text-sm transition hover:bg-border"
                       onClick={() => setShowProfileMenu(false)}
                     >
-                      <LayoutDashboard className="w-4 h-4" />
+                      <LayoutDashboard className="h-4 w-4" />
                       Dashboard
                     </Link>
                     <button
                       onClick={handleSignOut}
-                      className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-red-400 hover:bg-border transition-colors"
+                      className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-red-400 transition hover:bg-border"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="h-4 w-4" />
                       Sign Out
                     </button>
                   </div>
@@ -94,317 +201,432 @@ export default function Page() {
                 <Button variant="ghost" size="sm">Sign in</Button>
               </Link>
               <Link href="/signup">
-                <Button size="sm" className="bg-primary hover:bg-primary/90">Get Started</Button>
+                <Button size="sm" className="bg-primary hover:bg-primary/90">Open workspace</Button>
               </Link>
             </div>
           )}
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 md:py-32">
-        <div className="max-w-5xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">AI-Powered Report Generation</span>
+      <main>
+        <section className="relative overflow-hidden border-b border-border py-20 md:py-32">
+          <HeroSurface />
+          <div className="relative z-10 mx-auto max-w-7xl px-6">
+            <div className="max-w-4xl">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
+                <Sparkles className="h-4 w-4" />
+                Enterprise AI Analyst for documents
+              </div>
+              <h1 className="max-w-4xl text-4xl font-bold leading-tight text-balance sm:text-5xl md:text-7xl">
+                Documents in. <span className="text-primary">Decisions out.</span>
+              </h1>
+              <p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg md:text-xl md:leading-8">
+                Upload any report. FlowSummary understands it before generating anything.
+              </p>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <Link href={isAuthenticated ? '/dashboard' : '/signup'}>
+                  <Button size="lg" className="bg-primary px-5 hover:bg-primary/90">
+                    Start free
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <a href="#interactive-demo">
+                  <Button size="lg" variant="outline" className="px-5">
+                    See AI thinking
+                  </Button>
+                </a>
+              </div>
+              <div className="mt-10 lg:hidden">
+                <MobileHeroDemo />
+              </div>
+            </div>
           </div>
-          
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-balance">
-            Turn raw information into <span className="text-primary">professional reports</span>
-          </h1>
-          
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto text-balance">
-            Paste notes, spreadsheets, reports, meeting notes, or raw data and generate professional summaries in seconds.
-          </p>
+        </section>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Link href="/signup">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
-                Start Summarizing Free
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-            <Button size="lg" variant="outline" className="w-full sm:w-auto">
-              <Play className="w-4 h-4 mr-2" />
-              View Demo
-            </Button>
+        <Section id="problem" eyebrow="Problem" title="Most document tools stop at text." description="Business teams do not just need a shorter document. They need to know what the document is, what changed, what looks risky, and what decision should happen next.">
+          <div className="grid gap-4 md:grid-cols-5">
+            {['Read', 'Analyze', 'Write', 'Review', 'Present'].map((step) => (
+              <ProcessCard key={step} label={step} muted />
+            ))}
           </div>
+        </Section>
 
-          <p className="text-xs text-muted-foreground mb-12">
-            A Product by <span className="font-semibold text-foreground">raytech.cloud</span>
-          </p>
+        <Section id="solution" eyebrow="Solution" title="FlowSummary works like an experienced analyst." description="It understands the document, explores the evidence, infers the user’s intent, and recommends the most useful output before the user writes a prompt.">
+          <div className="grid gap-4 md:grid-cols-5">
+            {['Upload', 'Understand', 'Recommend', 'Generate', 'Present'].map((step) => (
+              <ProcessCard key={step} label={step} />
+            ))}
+          </div>
+        </Section>
 
-          {/* Hero Visual - Transformation Flow */}
-          <div className="grid grid-cols-3 gap-4 md:gap-8 max-w-3xl mx-auto">
-            <div className="space-y-3">
-              <div className="h-24 bg-card border border-border rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">150</div>
-                  <div className="text-xs text-muted-foreground">employees</div>
+        <Section id="thinking" eyebrow="How FlowSummary Thinks" title="It analyzes before it answers." description="Every upload follows a structured analyst process. The product does not wait for “what should I do?” It explains, explores, and recommends.">
+          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+            <GlassCard>
+              <div className="mb-5 flex items-center gap-2 text-sm font-medium text-primary">
+                <Activity className="h-4 w-4" />
+                Reading document...
+              </div>
+              <div className="space-y-3">
+                {thinkingSteps.map((step, index) => (
+                  <div key={step} className="flex items-center justify-between rounded-lg border border-border bg-background/40 px-3 py-2">
+                    <span className="text-sm">{step}</span>
+                    <span className={`h-2 w-2 rounded-full ${index < 6 ? 'bg-primary' : 'bg-amber-400'}`} />
+                  </div>
+                ))}
+              </div>
+              <p className="mt-5 text-sm text-muted-foreground">Done. Recommended output: Executive decision brief.</p>
+            </GlassCard>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {capabilities.map((capability) => (
+                <CapabilityCard key={capability.title} {...capability} />
+              ))}
+            </div>
+          </div>
+        </Section>
+
+        <Section id="how-it-works" eyebrow="How It Works" title="A repeatable path from file to decision." description="FlowSummary treats each upload as business evidence, not a generic text block.">
+          <div className="grid gap-4 lg:grid-cols-6">
+            {analystFlow.map((step, index) => (
+              <GlassCard key={step.label}>
+                <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-sm font-semibold text-primary">
+                  {index + 1}
                 </div>
-              </div>
-              <p className="text-sm font-medium">Raw Information</p>
-            </div>
-
-            <div className="flex items-center justify-center">
-              <div className="text-2xl text-primary">→</div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="h-24 bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 rounded-lg flex items-center justify-center p-4">
-                <p className="text-sm leading-relaxed">
-                  <span className="font-semibold text-primary">80%</span> attendance rate indicates strong compliance
-                </p>
-              </div>
-              <p className="text-sm font-medium">Professional Report</p>
-            </div>
+                <h3 className="text-base font-semibold">{step.label}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.detail}</p>
+              </GlassCard>
+            ))}
           </div>
-        </div>
-      </section>
+        </Section>
 
-      {/* Problem Section */}
-      <section id="features" className="py-20 border-t border-border">
-        <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-center">
-            Creating reports takes too much time
-          </h2>
-          <p className="text-center text-muted-foreground mb-12">
-            Reports require repetitive, manual work that distracts from higher-value activities
-          </p>
-
-          <div className="grid md:grid-cols-4 gap-6">
-            {[
-              { icon: FileText, title: 'Collect Data', desc: 'Gather information from multiple sources' },
-              { icon: Lightbulb, title: 'Write Summaries', desc: 'Manually compose and refine text' },
-              { icon: Clock, title: 'Prepare Reports', desc: 'Format and organize the content' },
-              { icon: Users, title: 'Share Results', desc: 'Distribute to stakeholders' }
-            ].map((item, i) => (
-              <div key={i} className="space-y-3">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <item.icon className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="font-semibold">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.desc}</p>
+        <Section id="documents" eyebrow="Supported Documents" title="Built for every document." description="FlowSummary adapts its analysis to the document type, then recommends the outputs executives and operators usually need.">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {documents.map((document) => (
+              <div key={document} className="rounded-lg border border-border bg-card/50 px-4 py-3 text-sm font-medium">
+                {document}
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </Section>
 
-      {/* Solution Section */}
-      <section className="py-20 border-t border-border bg-card/50">
-        <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-center">
-            FlowSummary does the writing for you
-          </h2>
-          <p className="text-center text-muted-foreground mb-12">
-            Three simple steps to professional reports
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { step: '1', title: 'Paste Information', desc: 'Copy and paste your raw content, data, or notes' },
-              { step: '2', title: 'Describe What You Need', desc: 'Specify the style, format, or focus for your report' },
-              { step: '3', title: 'Generate Professional Report', desc: 'Get polished, ready-to-use summaries instantly' }
-            ].map((item, i) => (
-              <div key={i} className="relative">
-                <div className="text-5xl font-bold text-primary/20 mb-4">{item.step}</div>
-                <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                <p className="text-muted-foreground">{item.desc}</p>
-              </div>
+        <Section id="enterprise" eyebrow="Enterprise Features" title="Designed for recurring analysis work." description="FlowSummary keeps the analyst workflow structured enough for teams, saved history, repeatable reviews, and management-ready outputs.">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {enterpriseFeatures.map((feature) => (
+              <CapabilityCard key={feature.title} {...feature} />
             ))}
           </div>
-        </div>
-      </section>
+        </Section>
 
-      {/* Use Cases Section */}
-      <section id="usecases" className="py-20 border-t border-border">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-center">
-            Built for every role
-          </h2>
-          <p className="text-center text-muted-foreground mb-12">
-            Generate the right reports for your team
-          </p>
-
-          <div className="grid md:grid-cols-5 gap-6">
-            {[
-              { icon: '🎓', title: 'Students', items: ['Internship Reports', 'Research Summaries', 'Academic Writing'] },
-              { icon: '🏢', title: 'Managers', items: ['Executive Summaries', 'Weekly Reports', 'Project Updates'] },
-              { icon: '👥', title: 'HR Teams', items: ['Interview Summaries', 'Training Reports', 'Performance Reviews'] },
-              { icon: '📚', title: 'Lecturers', items: ['Research Summaries', 'Workshop Reports', 'Academic Papers'] },
-              { icon: '🏛️', title: 'Government', items: ['Monitoring Reports', 'Activity Reports', 'Attendance Reports'] }
-            ].map((usecase, i) => (
-              <div key={i} className="p-6 rounded-lg border border-border bg-card hover:border-primary/50 transition">
-                <div className="text-3xl mb-3">{usecase.icon}</div>
-                <h3 className="font-semibold mb-4">{usecase.title}</h3>
-                <ul className="space-y-2">
-                  {usecase.items.map((item, j) => (
-                    <li key={j} className="text-sm text-muted-foreground flex items-start gap-2">
-                      <span className="text-primary mt-1">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+        <Section id="comparison" eyebrow="Comparison" title="Traditional AI waits. FlowSummary understands first." description="The experience is built around proactive document intelligence, not open-ended prompting.">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <ComparisonPanel
+              title="Traditional AI"
+              muted
+              items={['Waits for prompts', 'Treats files as text', 'Returns generic summaries', 'Leaves analysis choices to the user', 'Requires manual follow-up']}
+            />
+            <ComparisonPanel
+              title="FlowSummary"
+              items={['Understands first', 'Classifies the document', 'Explores anomalies and risk', 'Predicts the likely objective', 'Recommends the best outputs']}
+            />
           </div>
-        </div>
-      </section>
+        </Section>
 
-      {/* Example Outputs */}
-      <section id="examples" className="py-20 border-t border-border bg-card/50">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center">
-            See what it generates
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {[
-              {
-                title: 'Executive Summary',
-                content: 'Q3 performance exceeded targets with 32% YoY growth. Key drivers included market expansion in APAC (+45%) and product innovation. Operating margin improved to 28% despite inflationary pressures. Strategic initiatives on track for 2024 objectives.'
-              },
-              {
-                title: 'Meeting Summary',
-                content: 'Discussed Q4 roadmap, budget allocation, and team expansion. Decided to prioritize API v2 launch before year-end. Approved hiring for 3 engineering roles. Next sync in 2 weeks to review progress on action items.'
-              },
-              {
-                title: 'Research Summary',
-                content: 'Study analyzed 500+ enterprise SaaS adoption patterns. Findings: 73% prioritize security & compliance, 68% seek integration flexibility. Key recommendation: improve onboarding experience and compliance documentation to increase adoption rates.'
-              },
-              {
-                title: 'Monitoring Report',
-                content: 'System uptime: 99.98% | Avg response time: 145ms | Error rate: 0.02%. Database performance stable with peak load at 2PM. No critical incidents. All SLAs met. Scheduled maintenance window completed successfully.'
-              }
-            ].map((example, i) => (
-              <div key={i} className="p-6 rounded-lg border border-border bg-background">
-                <h3 className="font-semibold mb-4">{example.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{example.content}</p>
+        <Section id="interactive-demo" eyebrow="Interactive Demo" title="Watch the analyst path." description="Select a stage to see how FlowSummary moves from raw document to decision-ready output.">
+          <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="space-y-2">
+              {analystFlow.map((step, index) => (
                 <button
-                  onClick={() => copyToClipboard(example.content, i)}
-                  className="text-xs text-primary hover:text-primary/80 transition flex items-center gap-1"
+                  key={step.label}
+                  onClick={() => setActiveDemoStep(index)}
+                  className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition ${
+                    activeDemoStep === index
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border bg-card/50 hover:bg-card'
+                  }`}
                 >
-                  {copiedIndex === i ? (
-                    <>
-                      <Check className="w-3 h-3" />
-                      Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3 h-3" />
-                      Copy
-                    </>
-                  )}
+                  <span className="font-medium">{step.label}</span>
+                  <ArrowRight className="h-4 w-4 text-primary" />
                 </button>
+              ))}
+            </div>
+            <GlassCard className="bg-card/70">
+              <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <FileCheck2 className="h-4 w-4 text-primary" />
+                Analyst workspace
               </div>
+              <h3 className="text-2xl font-semibold">{analystFlow[activeDemoStep].label}</h3>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">{analystFlow[activeDemoStep].detail}</p>
+              <div className="mt-6 grid gap-3 md:grid-cols-3">
+                {['Document detected', 'KPIs extracted', 'Next action selected'].map((item) => (
+                  <div key={item} className="rounded-lg border border-border bg-background/40 p-3 text-sm text-muted-foreground">
+                    <Check className="mb-3 h-4 w-4 text-primary" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          </div>
+        </Section>
+
+        <Section id="examples" eyebrow="Examples" title="Outputs that support decisions." description="FlowSummary changes its output based on the document type and the likely business objective.">
+          <div className="grid gap-4 lg:grid-cols-3">
+            {examples.map((example) => (
+              <GlassCard key={example.title}>
+                <h3 className="text-lg font-semibold">{example.title}</h3>
+                <p className="mt-4 text-sm font-medium text-primary">Input</p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{example.input}</p>
+                <p className="mt-4 text-sm font-medium text-primary">Output</p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{example.output}</p>
+              </GlassCard>
             ))}
           </div>
-        </div>
-      </section>
+        </Section>
 
-      {/* Benefits Section */}
-      <section className="py-20 border-t border-border">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center">
-            Why FlowSummary
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { icon: Zap, title: 'Save Time', desc: 'Generate reports 10x faster than manual writing' },
-              { icon: Shield, title: 'Professional Writing', desc: 'AI-generated content maintains your brand voice' },
-              { icon: Lightbulb, title: 'Works With Any Information', desc: 'Upload any format: text, data, spreadsheets, and more' },
-              { icon: Clock, title: 'No Complex Setup', desc: 'Start summarizing in seconds, no training required' },
-              { icon: Sparkles, title: 'Always Accurate', desc: 'Reviews your content for quality and coherence' },
-              { icon: Users, title: 'Shareable', desc: 'Export and share reports with your team instantly' }
-            ].map((benefit, i) => (
-              <div key={i} className="space-y-3">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <benefit.icon className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="font-semibold">{benefit.title}</h3>
-                <p className="text-sm text-muted-foreground">{benefit.desc}</p>
-              </div>
-            ))}
+        <section className="border-t border-border bg-card/40 px-6 py-20">
+          <div className="mx-auto max-w-4xl text-center">
+            <h2 className="text-4xl font-bold leading-tight md:text-6xl">
+              Stop reading reports. <span className="text-primary">Start making decisions.</span>
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
+              Upload a document and let FlowSummary find the context, risks, intent, and best next output.
+            </p>
+            <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+              <Link href={isAuthenticated ? '/dashboard' : '/signup'}>
+                <Button size="lg" className="bg-primary px-5 hover:bg-primary/90">
+                  Analyze a document
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/signin">
+                <Button size="lg" variant="outline" className="px-5">
+                  Sign in
+                </Button>
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* Final CTA Section */}
-      <section className="py-20 border-t border-border bg-gradient-to-r from-primary/10 via-primary/5 to-background">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            Stop writing reports manually
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8">
-            Generate professional summaries and reports in seconds.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/signup">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
-                Get Started Free
-              </Button>
-            </Link>
-            <Link href="/signin">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Sign in with RayTech Account
-              </Button>
-            </Link>
-          </div>
-
-          <p className="text-sm text-muted-foreground mt-8">
-            No credit card required • Free tier includes 10 reports/month
-          </p>
-        </div>
-      </section>
-
-      {/* Footer */}
       <footer className="border-t border-border bg-card/50 py-12">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-5 gap-8 mb-8">
-            <div>
-              <div className="mb-4 flex items-center gap-2">
-                <FlowSummaryLogo className="h-8 w-8 rounded-lg" />
-                <h3 className="font-semibold">FlowSummary</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">Part of the RayTech ecosystem.</p>
+        <div className="mx-auto grid max-w-6xl gap-8 px-6 md:grid-cols-5">
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2">
+              <FlowSummaryLogo className="h-8 w-8 rounded-lg" />
+              <span className="font-semibold">FlowSummary</span>
             </div>
-            <div>
-              <h4 className="font-medium text-sm mb-4">Product</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground">Features</a></li>
-                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-sm mb-4">Company</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground">Blog</a></li>
-                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground">Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-sm mb-4">Legal</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground">Privacy</a></li>
-                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground">Terms</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-sm mb-4">RayTech</h4>
-              <ul className="space-y-2">
-                <li><Link href="/signin" className="text-sm text-muted-foreground hover:text-foreground">RayTech Account</Link></li>
-              </ul>
-            </div>
+            <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
+              Enterprise AI Analyst for document intelligence. Part of the RayTech ecosystem.
+            </p>
           </div>
-
-          <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-            <p>A Product by <span className="font-semibold text-foreground">raytech.cloud</span></p>
-          </div>
+          <FooterColumn title="Product" links={['How it thinks', 'Documents', 'Comparison', 'Examples']} />
+          <FooterColumn title="RayTech" links={['RayTech Account', 'FlowNote', 'FlowSign', 'raytech.cloud']} />
+          <FooterColumn title="Legal" links={['Privacy', 'Terms']} />
         </div>
       </footer>
+    </div>
+  )
+}
+
+function HeroSurface() {
+  const thinking = [
+    { icon: Upload, text: 'Upload Report.pdf', delay: '0s' },
+    { icon: Activity, text: 'Reading document...', delay: '1.1s' },
+    { icon: FileText, text: 'Financial Report detected', meta: '98% confidence', delay: '2.2s' },
+    { icon: BarChart3, text: '12 KPIs extracted', delay: '3.3s' },
+    { icon: AlertTriangle, text: '4 anomalies discovered', delay: '4.4s' },
+    { icon: Target, text: 'User intent predicted', delay: '5.5s' },
+    { icon: ClipboardCheck, text: 'Recommended outputs ready', delay: '6.6s' },
+  ]
+
+  const outputs = [
+    { icon: FileText, text: 'Executive Summary' },
+    { icon: BarChart3, text: 'Dashboard' },
+    { icon: Presentation, text: 'Presentation' },
+  ]
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(139,92,246,0.18),transparent_34%),radial-gradient(circle_at_45%_80%,rgba(168,85,247,0.12),transparent_30%)]" />
+      <div className="absolute right-[max(1.5rem,calc((100vw-80rem)/2+1.5rem))] top-1/2 hidden w-[560px] -translate-y-1/2 rounded-2xl border border-border bg-card/65 p-4 shadow-2xl backdrop-blur-xl lg:block">
+        <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+          <div>
+            <p className="text-sm font-medium">Analyst thinking</p>
+            <p className="mt-1 text-xs text-muted-foreground">Looping product demonstration</p>
+          </div>
+          <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary">
+            Live analysis
+          </div>
+        </div>
+
+        <div className="flex flex-col">
+          <div className="space-y-2">
+            {thinking.map((step, index) => (
+              <div
+                key={step.text}
+                className="hero-thinking-step flex items-center justify-between rounded-lg border border-border bg-background/45 px-3 py-2"
+                style={{ animationDelay: step.delay }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <step.icon className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-foreground">{step.text}</p>
+                    {step.meta && <p className="text-xs text-muted-foreground">{step.meta}</p>}
+                  </div>
+                </div>
+                {index > 0 && (
+                  <Check className="h-4 w-4 text-primary" />
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="hero-output-panel mt-3 rounded-xl border border-primary/20 bg-primary/10 p-3">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-medium">Recommended outputs</p>
+              <span className="text-xs text-primary">Done</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {outputs.map((output) => (
+                <div key={output.text} className="rounded-lg border border-border bg-background/45 p-2.5">
+                  <output.icon className="mb-2 h-4 w-4 text-primary" />
+                  <p className="text-xs text-muted-foreground">{output.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MobileHeroDemo() {
+  const items = [
+    { text: 'Reading document...', delay: '0.6s' },
+    { text: 'Financial Report detected', delay: '1.8s' },
+    { text: '12 KPIs extracted', delay: '3s' },
+    { text: '4 anomalies discovered', delay: '4.2s' },
+    { text: 'User intent predicted', delay: '5.4s' },
+  ]
+
+  return (
+    <div className="rounded-2xl border border-border bg-card/65 p-4 shadow-2xl backdrop-blur-xl">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">Analyst thinking</p>
+          <p className="mt-1 text-xs text-muted-foreground">Report.pdf</p>
+        </div>
+        <Activity className="h-4 w-4 animate-pulse text-primary" />
+      </div>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div
+            key={item.text}
+            className="hero-thinking-step flex items-center gap-2 rounded-lg border border-border bg-background/45 px-3 py-2 text-xs text-muted-foreground"
+            style={{ animationDelay: item.delay }}
+          >
+            <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <span>{item.text}</span>
+          </div>
+        ))}
+      </div>
+      <div className="hero-output-panel mt-3 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
+        Recommended outputs ready
+      </div>
+    </div>
+  )
+}
+
+function Section({
+  id,
+  eyebrow,
+  title,
+  description,
+  children,
+}: {
+  id: string
+  eyebrow: string
+  title: string
+  description: string
+  children: React.ReactNode
+}) {
+  return (
+    <section id={id} className="border-t border-border px-6 py-20">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-10 max-w-3xl">
+          <p className="mb-3 text-sm font-semibold text-primary">{eyebrow}</p>
+          <h2 className="text-4xl font-bold leading-tight md:text-5xl">{title}</h2>
+          <p className="mt-4 text-base leading-7 text-muted-foreground md:text-lg">{description}</p>
+        </div>
+        {children}
+      </div>
+    </section>
+  )
+}
+
+function GlassCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-xl border border-border bg-card/50 p-5 backdrop-blur ${className}`}>
+      {children}
+    </div>
+  )
+}
+
+function ProcessCard({ label, muted = false }: { label: string; muted?: boolean }) {
+  return (
+    <div className={`rounded-xl border p-5 ${muted ? 'border-border bg-card/35 text-muted-foreground' : 'border-primary/30 bg-primary/10 text-foreground'}`}>
+      <div className="mb-4 h-1.5 w-12 rounded bg-current opacity-40" />
+      <p className="font-semibold">{label}</p>
+    </div>
+  )
+}
+
+function CapabilityCard({
+  icon: Icon,
+  title,
+  text,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  title: string
+  text: string
+}) {
+  return (
+    <GlassCard>
+      <Icon className="h-5 w-5 text-primary" />
+      <h3 className="mt-5 text-lg font-semibold">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p>
+    </GlassCard>
+  )
+}
+
+function ComparisonPanel({ title, items, muted = false }: { title: string; items: string[]; muted?: boolean }) {
+  return (
+    <div className={`rounded-xl border p-5 ${muted ? 'border-border bg-card/35' : 'border-primary/30 bg-primary/10'}`}>
+      <h3 className="text-xl font-semibold">{title}</h3>
+      <ul className="mt-5 space-y-3">
+        {items.map((item) => (
+          <li key={item} className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Check className={`h-4 w-4 ${muted ? 'text-muted-foreground' : 'text-primary'}`} />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function FooterColumn({ title, links }: { title: string; links: string[] }) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <ul className="mt-4 space-y-2">
+        {links.map((link) => (
+          <li key={link}>
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground">{link}</a>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

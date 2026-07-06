@@ -2,6 +2,10 @@
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
 
+## Product Specification
+
+The FlowSummary AI product, UX, recommendation engine, template intelligence, and scalable architecture specification is documented in [docs/flowsummary-product-spec.md](docs/flowsummary-product-spec.md).
+
 ## Built with v0
 
 This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.

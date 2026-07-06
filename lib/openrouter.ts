@@ -75,6 +75,10 @@ function getOpenRouterError(payload: unknown) {
   return typeof error?.message === 'string' ? error.message : null
 }
 
+export function hasOpenRouterConfig() {
+  return Boolean(process.env.OPENROUTER_API_KEY)
+}
+
 function normalizeStringArray(value: unknown) {
   if (!Array.isArray(value)) {
     return []
@@ -140,10 +144,11 @@ function getInstructions(templateId: string | null, customInstructions: string) 
   ].join('\n')
 }
 
-export async function generateSummaryWithOpenRouter(params: {
-  sourceText: string
-  instructions: string
-  templateId: string | null
+async function callOpenRouter(params: {
+  systemPrompt: string
+  userPrompt: string
+  maxTokens: number
+  temperature?: number
 }) {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) {
@@ -152,9 +157,9 @@ export async function generateSummaryWithOpenRouter(params: {
 
   const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL
   const fallbackModel = process.env.OPENROUTER_FALLBACK_MODEL || DEFAULT_FALLBACK_MODEL
-  const sourceText = clampText(params.sourceText, MAX_SOURCE_CHARS)
+  const userPrompt = clampText(params.userPrompt, MAX_SOURCE_CHARS)
 
-  const callOpenRouter = async (targetModel: string) =>
+  const requestModel = async (targetModel: string) =>
     fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -168,19 +173,19 @@ export async function generateSummaryWithOpenRouter(params: {
         messages: [
           {
             role: 'system',
-            content: getInstructions(params.templateId, params.instructions),
+            content: params.systemPrompt,
           },
           {
             role: 'user',
-            content: sourceText,
+            content: userPrompt,
           },
         ],
-        temperature: 0.2,
-        max_tokens: 1200,
+        temperature: params.temperature ?? 0.2,
+        max_tokens: params.maxTokens,
       }),
     })
 
-  const primaryResponse = await callOpenRouter(model)
+  const primaryResponse = await requestModel(model)
   const primaryPayload = (await primaryResponse.json().catch(() => null)) as unknown
   const primaryError = getOpenRouterError(primaryPayload)
 
@@ -190,32 +195,72 @@ export async function generateSummaryWithOpenRouter(params: {
     fallbackModel !== model &&
     primaryError?.includes('No endpoints found for')
   ) {
-    const fallbackResponse = await callOpenRouter(fallbackModel)
+    const fallbackResponse = await requestModel(fallbackModel)
     const fallbackPayload = (await fallbackResponse.json().catch(() => null)) as unknown
 
     if (!fallbackResponse.ok) {
-      throw new Error(getOpenRouterError(fallbackPayload) || 'Failed to generate summary.')
-    }
-
-    const fallbackOutput = parseGeneratedSummary(extractOpenRouterText(fallbackPayload))
-    if (!fallbackOutput) {
-      throw new Error('AI returned an invalid response. Try a more specific prompt.')
+      throw new Error(getOpenRouterError(fallbackPayload) || 'Failed to generate AI response.')
     }
 
     return {
-      output: {
-        ...fallbackOutput,
-        title: fallbackOutput.title || fallbackTitle(sourceText),
-      },
+      text: extractOpenRouterText(fallbackPayload),
       model: fallbackModel,
     }
   }
 
   if (!primaryResponse.ok) {
-    throw new Error(primaryError || 'Failed to generate summary.')
+    throw new Error(primaryError || 'Failed to generate AI response.')
   }
 
-  const output = parseGeneratedSummary(extractOpenRouterText(primaryPayload))
+  return {
+    text: extractOpenRouterText(primaryPayload),
+    model,
+  }
+}
+
+export async function generateJsonWithOpenRouter(params: {
+  systemPrompt: string
+  userPrompt: string
+  maxTokens?: number
+  temperature?: number
+}) {
+  const response = await callOpenRouter({
+    systemPrompt: [
+      params.systemPrompt,
+      '',
+      'Return ONLY valid JSON. Do not wrap the response in markdown.',
+    ].join('\n'),
+    userPrompt: params.userPrompt,
+    maxTokens: params.maxTokens ?? 1600,
+    temperature: params.temperature,
+  })
+
+  try {
+    return {
+      data: JSON.parse(stripCodeFence(response.text)) as unknown,
+      model: response.model,
+      rawText: response.text,
+    }
+  } catch {
+    throw new Error('AI returned invalid JSON.')
+  }
+}
+
+export async function generateSummaryWithOpenRouter(params: {
+  sourceText: string
+  instructions: string
+  templateId: string | null
+}) {
+  const sourceText = clampText(params.sourceText, MAX_SOURCE_CHARS)
+
+  const response = await callOpenRouter({
+    systemPrompt: getInstructions(params.templateId, params.instructions),
+    userPrompt: sourceText,
+    maxTokens: 1200,
+    temperature: 0.2,
+  })
+
+  const output = parseGeneratedSummary(response.text)
   if (!output) {
     throw new Error('AI returned an invalid response. Try a more specific prompt.')
   }
@@ -225,6 +270,6 @@ export async function generateSummaryWithOpenRouter(params: {
       ...output,
       title: output.title || fallbackTitle(sourceText),
     },
-    model,
+    model: response.model,
   }
 }

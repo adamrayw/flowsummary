@@ -1,13 +1,27 @@
 import type { TextItem } from 'pdfjs-dist/types/src/display/api'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 import type { RawFileExtractionResult } from './types'
 
 let workerConfigured = false
 
-export async function extractPdfText(file: File): Promise<RawFileExtractionResult> {
-  const pdfjs = await import('pdfjs-dist')
+type PdfjsModule = typeof import('pdfjs-dist')
 
-  if (!workerConfigured) {
+export async function extractPdfText(file: File): Promise<RawFileExtractionResult> {
+  const isServer = typeof window === 'undefined'
+  const pdfjs = isServer ? await importServerPdfjs() : await import('pdfjs-dist')
+
+  if (!workerConfigured && isServer) {
+    pdfjs.GlobalWorkerOptions.workerSrc = getPdfjsPackageFileUrl(
+      'legacy',
+      'build',
+      'pdf.worker.mjs',
+    )
+    workerConfigured = true
+  }
+
+  if (!workerConfigured && typeof window !== 'undefined') {
     pdfjs.GlobalWorkerOptions.workerSrc = new URL(
       'pdfjs-dist/build/pdf.worker.mjs',
       import.meta.url,
@@ -17,6 +31,7 @@ export async function extractPdfText(file: File): Promise<RawFileExtractionResul
 
   const loadingTask = pdfjs.getDocument({
     data: new Uint8Array(await file.arrayBuffer()),
+    standardFontDataUrl: isServer ? getPdfjsStandardFontDataUrl() : undefined,
   })
   const pdf = await loadingTask.promise
   const pageCount = pdf.numPages
@@ -50,6 +65,23 @@ export async function extractPdfText(file: File): Promise<RawFileExtractionResul
       pages: pageCount,
     },
   }
+}
+
+function getPdfjsStandardFontDataUrl() {
+  return getPdfjsPackageFileUrl('standard_fonts') + '/'
+}
+
+async function importServerPdfjs(): Promise<PdfjsModule> {
+  const nativeImport = new Function('specifier', 'return import(specifier)') as (
+    specifier: string,
+  ) => Promise<PdfjsModule>
+
+  return nativeImport(getPdfjsPackageFileUrl('legacy', 'build', 'pdf.mjs'))
+}
+
+function getPdfjsPackageFileUrl(...segments: string[]) {
+  return pathToFileURL(path.join(process.cwd(), 'node_modules', 'pdfjs-dist', ...segments))
+    .toString()
 }
 
 function isTextItem(item: unknown): item is TextItem {

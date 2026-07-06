@@ -6,6 +6,7 @@ import { Lightbulb, CheckCircle2, AlertCircle, Zap } from 'lucide-react'
 
 interface GeneratedOutputSectionProps {
   output: {
+    title?: string
     summary: string
     keyInsights: string[]
     recommendations: string[]
@@ -16,6 +17,12 @@ interface GeneratedOutputSectionProps {
 export default function GeneratedOutputSection({ output }: GeneratedOutputSectionProps) {
   return (
     <div className="space-y-6">
+      {output.title && (
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">{output.title}</h2>
+        </div>
+      )}
+
       {/* Main Summary */}
       <OutputCard
         title="Summary"

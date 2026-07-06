@@ -25,3 +25,36 @@ model Summary {
 
   @@index([userId, updatedAt])
 }
+
+model Document {
+  id                String   @id @default(cuid())
+  userId            String
+  filename          String
+  fileType          String
+  sourceText        String?
+  classification    String?
+  confidence        Float?
+  extractionContext Json?
+  analysisContext   Json?
+  recommendations   Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  reports           GeneratedReport[]
+
+  @@index([userId, createdAt])
+}
+
+model GeneratedReport {
+  id              String   @id @default(cuid())
+  documentId      String
+  userId          String
+  title           String
+  reportType      String
+  content         Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  document        Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, documentId])
+}

@@ -132,24 +132,24 @@ export default function HistorySidebar({
         </h2>
       </div>
 
-      {/* New Conversation Button */}
+      {/* New Analysis Button */}
       <div className="p-4">
         <button
           onClick={onNewSummary}
           className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors font-medium text-sm"
         >
-          + New Summary
+          + New Analysis
         </button>
       </div>
 
-      {/* Summary Groups */}
+      {/* Analysis Groups */}
       <div className="px-2 py-4">
         {isLoading && (
           <p className="px-4 py-2 text-xs text-muted-foreground">Loading history...</p>
         )}
         {!isLoading && summaries.length === 0 && (
           <p className="px-4 py-2 text-xs text-muted-foreground">
-            Generated summaries will appear here.
+            Generated analyses will appear here.
           </p>
         )}
         {today.length > 0 && <SummaryGroup title="Today" items={today} sectionKey="today" />}

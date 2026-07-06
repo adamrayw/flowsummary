@@ -41,7 +41,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable}`}>
-      <body className="font-sans antialiased bg-background text-foreground">
+      <body
+        suppressHydrationWarning
+        className="font-sans antialiased bg-background text-foreground"
+      >
         <AuthSessionProvider>{children}</AuthSessionProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

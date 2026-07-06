@@ -128,3 +128,62 @@
     @apply font-sans;
   }
 }
+
+@keyframes hero-thinking-step {
+  0%,
+  9% {
+    opacity: 0.38;
+    transform: translateY(6px);
+    border-color: var(--border);
+  }
+  14%,
+  76% {
+    opacity: 1;
+    transform: translateY(0);
+    border-color: color-mix(in oklab, var(--primary) 34%, var(--border));
+  }
+  90%,
+  100% {
+    opacity: 0.5;
+    transform: translateY(0);
+    border-color: var(--border);
+  }
+}
+
+@keyframes hero-output-panel {
+  0%,
+  68% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  76%,
+  92% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.hero-thinking-step {
+  opacity: 0.38;
+  animation: hero-thinking-step 9s ease-in-out infinite;
+  will-change: opacity, transform, border-color;
+}
+
+.hero-output-panel {
+  opacity: 0;
+  animation: hero-output-panel 9s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-thinking-step,
+  .hero-output-panel {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
