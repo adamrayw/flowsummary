@@ -123,9 +123,9 @@ export default function HistorySidebar({
   )
 
   return (
-    <div className="w-64 border-r border-border bg-card overflow-y-auto">
+    <div className="flex h-full w-64 flex-col border-r border-border bg-card">
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="shrink-0 border-b border-border p-4">
         <h2 className="font-semibold text-foreground flex items-center gap-2">
           <Clock className="w-5 h-5 text-primary" />
           History
@@ -133,7 +133,7 @@ export default function HistorySidebar({
       </div>
 
       {/* New Analysis Button */}
-      <div className="p-4">
+      <div className="shrink-0 p-4">
         <button
           onClick={onNewSummary}
           className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-secondary transition-colors font-medium text-sm"
@@ -143,7 +143,7 @@ export default function HistorySidebar({
       </div>
 
       {/* Analysis Groups */}
-      <div className="px-2 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-4">
         {isLoading && (
           <p className="px-4 py-2 text-xs text-muted-foreground">Loading history...</p>
         )}

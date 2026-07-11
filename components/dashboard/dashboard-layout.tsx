@@ -27,9 +27,9 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar - Hidden on mobile, visible on md and up */}
-      <div className="hidden md:block">
+      <div className="hidden h-full shrink-0 md:block">
         <HistorySidebar
           summaries={summaries}
           activeSummaryId={activeSummaryId}
@@ -71,12 +71,12 @@ export default function DashboardLayout({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
         {/* Top Navigation */}
         <TopNav onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="min-h-0 flex-1 overflow-y-auto">
           {children}
         </main>
       </div>

@@ -246,12 +246,12 @@ export default function Page() {
         <section className="relative overflow-hidden border-b border-border py-20 md:py-32">
           <HeroSurface />
           <div className="relative z-10 mx-auto max-w-7xl px-6">
-            <div className="max-w-4xl">
+            <div className="max-w-4xl xl:max-w-[610px]">
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
                 <Sparkles className="h-4 w-4" />
                 Enterprise AI Analyst under RayTech Platform
               </div>
-              <h1 className="max-w-4xl text-4xl font-bold leading-tight text-balance sm:text-5xl md:text-7xl">
+              <h1 className="max-w-4xl text-4xl font-bold leading-tight text-balance sm:text-5xl md:text-6xl xl:text-7xl">
                 Stop reading reports. <span className="text-primary">Start investigating with AI.</span>
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg md:text-xl md:leading-8">
@@ -486,7 +486,7 @@ function HeroSurface() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(139,92,246,0.18),transparent_34%),radial-gradient(circle_at_45%_80%,rgba(168,85,247,0.12),transparent_30%)]" />
-      <div className="absolute right-[max(1.5rem,calc((100vw-80rem)/2+1.5rem))] top-1/2 hidden w-[560px] -translate-y-1/2 rounded-2xl border border-border bg-card/65 p-4 shadow-2xl backdrop-blur-xl lg:block">
+      <div className="absolute right-[max(1.5rem,calc((100vw-80rem)/2+1.5rem))] top-1/2 hidden w-[520px] -translate-y-1/2 rounded-2xl border border-border bg-card/65 p-4 shadow-2xl backdrop-blur-xl xl:block">
         <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
           <div>
             <p className="text-sm font-medium">Analyst thinking</p>

@@ -9,7 +9,7 @@ import InsightPreview, {
   LikelyUserIntent,
 } from '@/components/dashboard/insight-preview'
 import RecommendationEngine, { Recommendation } from '@/components/dashboard/recommendation-engine'
-import GeneratedOutputSection from '@/components/dashboard/generated-output-section'
+import GeneratedOutputSection, { AnalysisAnalystConsole } from '@/components/dashboard/generated-output-section'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import type { SummaryListItem } from '@/lib/summary-types'
@@ -84,6 +84,21 @@ export default function DashboardPage() {
   const [generatedOutput, setGeneratedOutput] = useState<GeneratedDocumentOutput | null>(null)
   const [statusText, setStatusText] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const analysisConsoleOutput =
+    currentState === 'INSIGHTS' && dna
+      ? buildAnalysisConsoleOutput({
+          classification,
+          classificationConfidence,
+          classificationExplanation,
+          dna,
+          documentHealth,
+          keyFindings,
+          aiInterpretation,
+          likelyUserIntent,
+          insightPreview,
+          recommendations,
+        })
+      : null
 
   const loadHistory = async () => {
     setIsHistoryLoading(true)
@@ -393,6 +408,7 @@ export default function DashboardPage() {
                   onSelect={handleRecommendationSelect}
                 />
               </div>
+              {analysisConsoleOutput && <AnalysisAnalystConsole output={analysisConsoleOutput} />}
             </div>
           )}
 
@@ -427,4 +443,108 @@ function getPayloadMessage(payload: unknown) {
 
   const message = (payload as { message?: unknown }).message
   return typeof message === 'string' ? message : ''
+}
+
+function buildAnalysisConsoleOutput(params: {
+  classification: string
+  classificationConfidence: number
+  classificationExplanation: string
+  dna: DocumentDNA
+  documentHealth: DocumentHealth | null
+  keyFindings: string[]
+  aiInterpretation: string
+  likelyUserIntent: LikelyUserIntent[]
+  insightPreview: string[]
+  recommendations: Recommendation[]
+}): GeneratedDocumentOutput {
+  const primaryIntent = params.likelyUserIntent[0]
+  const primaryRecommendation = params.recommendations.find((item) => item.isPrimary) || params.recommendations[0]
+  const primaryKpi = params.dna.columns?.[0] || params.classification || 'Document signal'
+  const primaryDimension = params.dna.columns?.[0] || params.classification || 'Document context'
+
+  return {
+    title: `${params.classification || 'Document'} Analysis`,
+    workspaceTitle: 'Analysis Complete',
+    renderer: 'executive-dashboard',
+    purpose: 'Review extracted document intelligence and choose the best next investigation.',
+    hero: {
+      label: primaryKpi,
+      value: primaryIntent ? `${Math.round(primaryIntent.probability * 100)}% intent confidence` : `${params.classificationConfidence}% classification confidence`,
+      verdict: primaryRecommendation?.title || 'Recommended actions prepared',
+      detail: params.aiInterpretation || params.classificationExplanation,
+      trend: 'Current analysis',
+      risk: params.documentHealth && params.documentHealth.overallScore < 70 ? 'Medium' : 'Low',
+      confidence: params.classificationConfidence,
+    },
+    aiThinkingSummary:
+      params.aiInterpretation ||
+      params.classificationExplanation ||
+      'FlowSummary analyzed the document and prepared recommended investigations.',
+    insightTitle: params.classification || 'Document Intelligence',
+    statusLine: primaryRecommendation?.description || 'Review recommended actions and continue the investigation.',
+    metrics: [
+      {
+        label: primaryKpi,
+        value: primaryIntent ? primaryIntent.objective : params.classification,
+        detail: primaryIntent?.reason || params.classificationExplanation,
+        interpretation: params.aiInterpretation,
+        confidence: params.classificationConfidence,
+        sourceFields: params.dna.columns?.slice(0, 4) || [],
+        tone: 'neutral',
+      },
+      {
+        label: 'Document Health',
+        value: params.documentHealth ? `${params.documentHealth.overallScore}%` : 'Contextual',
+        detail: params.documentHealth?.explanation || 'Health score will appear when structured data is available.',
+        sourceFields: ['Completeness', 'Consistency', 'Reliability'],
+        risk: params.documentHealth && params.documentHealth.overallScore < 70 ? 'Medium' : 'Low',
+        tone: params.documentHealth && params.documentHealth.overallScore < 70 ? 'warning' : 'positive',
+      },
+      {
+        label: 'Recommended Investigation',
+        value: primaryRecommendation?.title || 'Review recommendations',
+        detail: primaryRecommendation?.whyRecommended || primaryRecommendation?.description,
+        sourceFields: [primaryDimension],
+        tone: 'positive',
+      },
+    ],
+    sections: [
+      {
+        id: 'context',
+        title: primaryDimension,
+        description: 'Current analysis context available to AI Analyst.',
+        items: params.insightPreview.length > 0 ? params.insightPreview.slice(0, 3) : [params.classificationExplanation],
+        evidence: params.keyFindings.slice(0, 3),
+        score: params.classificationConfidence,
+      },
+      {
+        id: 'findings',
+        title: 'Key Findings',
+        description: 'Evidence extracted during document understanding.',
+        items: params.keyFindings.length > 0 ? params.keyFindings.slice(0, 5) : params.insightPreview.slice(0, 5),
+        evidence: params.insightPreview.slice(0, 3),
+      },
+    ],
+    actions: params.recommendations.slice(0, 5).map((recommendation) => ({
+      title: recommendation.title,
+      detail: recommendation.whyRecommended || recommendation.description,
+      priority: recommendation.isPrimary ? 'High' : 'Medium',
+      owner: 'Analysis team',
+    })),
+    nextAnalyses: params.recommendations.slice(0, 4).map((recommendation) => ({
+      title: recommendation.title,
+      reason: recommendation.whyRecommended || recommendation.description,
+      renderer:
+        recommendation.type === 'presentation'
+          ? 'presentation'
+          : recommendation.type === 'dashboard'
+            ? 'executive-dashboard'
+            : 'executive-summary',
+    })),
+    followUpQuestions: [
+      `Why is ${primaryKpi} the strongest signal?`,
+      'Which recommendation should be opened first?',
+      'What evidence supports the primary action?',
+    ],
+  }
 }

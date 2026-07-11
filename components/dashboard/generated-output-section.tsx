@@ -369,6 +369,89 @@ export default function GeneratedOutputSection({ output }: GeneratedOutputSectio
   )
 }
 
+export function AnalysisAnalystConsole({ output }: GeneratedOutputSectionProps) {
+  const [workspaceState, setWorkspaceState] = useState<WorkspaceState>(() => ({
+    selectedKpi: output.metrics[0]?.label || output.hero.label,
+    selectedDimension: output.sections[0]?.title || 'Analysis Complete',
+    selectedTimeRange: output.hero.trend || 'Current analysis',
+    selectedRegion: 'All regions',
+    selectedProduct: 'All products',
+    analysisHistory: ['Document analysis completed', 'Recommendations prepared'],
+    previousReasoning: [output.aiThinkingSummary],
+  }))
+  const [isAnalystConsoleOpen, setIsAnalystConsoleOpen] = useState(true)
+  const [analystConsoleWidth, setAnalystConsoleWidth] = useState(400)
+
+  useEffect(() => {
+    const storedWidth = Number(window.localStorage.getItem('flowsummary:analyst-console-width'))
+
+    if (Number.isFinite(storedWidth) && storedWidth >= 380 && storedWidth <= 640) {
+      setAnalystConsoleWidth(storedWidth)
+    }
+  }, [])
+
+  useEffect(() => {
+    window.localStorage.setItem('flowsummary:analyst-console-width', String(analystConsoleWidth))
+  }, [analystConsoleWidth])
+
+  const updateState = (patch: Partial<WorkspaceState>, event?: string) => {
+    setWorkspaceState((current) => ({
+      ...current,
+      ...patch,
+      analysisHistory: event ? [...current.analysisHistory, event].slice(-8) : current.analysisHistory,
+      previousReasoning:
+        event && !current.previousReasoning.includes(event)
+          ? [...current.previousReasoning, event].slice(-6)
+          : current.previousReasoning,
+    }))
+  }
+
+  const workspace: WorkspaceInteraction = {
+    state: workspaceState,
+    activeEvidence: null,
+    setActiveEvidence: () => undefined,
+    openWorkspaceModal: () => undefined,
+    requestWorkspaceModal: async () => undefined,
+    updateState,
+    handleMetricAction: () => undefined,
+    handleSectionEvidence: () => undefined,
+  }
+
+  return (
+    <>
+      {isAnalystConsoleOpen ? (
+        <AnalystConsole
+          output={output}
+          workspace={workspace}
+          width={analystConsoleWidth}
+          onWidthChange={setAnalystConsoleWidth}
+          onClose={() => setIsAnalystConsoleOpen(false)}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsAnalystConsoleOpen(true)}
+          className="fixed right-0 top-1/2 z-40 hidden -translate-y-1/2 items-center gap-2 rounded-l-xl border border-r-0 border-primary/30 bg-card/95 px-3 py-4 text-sm font-medium text-primary shadow-2xl backdrop-blur transition hover:bg-primary/10 xl:flex [writing-mode:vertical-rl]"
+          aria-label="Open AI Analyst Console"
+        >
+          <PanelRightOpen className="h-4 w-4" />
+          AI Analyst
+        </button>
+      )}
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="fixed bottom-4 right-4 z-40 xl:hidden"
+        onClick={() => setIsAnalystConsoleOpen(true)}
+      >
+        <Sparkles className="mr-2 h-4 w-4 text-primary" />
+        AI Analyst
+      </Button>
+    </>
+  )
+}
+
 function AnalystConsole({
   output,
   workspace,
