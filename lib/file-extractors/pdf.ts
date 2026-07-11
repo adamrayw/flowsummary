@@ -1,4 +1,5 @@
 import type { TextItem } from 'pdfjs-dist/types/src/display/api'
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -29,9 +30,10 @@ export async function extractPdfText(file: File): Promise<RawFileExtractionResul
     workerConfigured = true
   }
 
+  const standardFontDataUrl = isServer ? getPdfjsStandardFontDataUrl() : undefined
   const loadingTask = pdfjs.getDocument({
     data: new Uint8Array(await file.arrayBuffer()),
-    standardFontDataUrl: isServer ? getPdfjsStandardFontDataUrl() : undefined,
+    ...(standardFontDataUrl ? { standardFontDataUrl } : {}),
   })
   const pdf = await loadingTask.promise
   const pageCount = pdf.numPages
@@ -68,7 +70,14 @@ export async function extractPdfText(file: File): Promise<RawFileExtractionResul
 }
 
 function getPdfjsStandardFontDataUrl() {
-  return getPdfjsPackageFileUrl('standard_fonts') + '/'
+  const fontDirectory = path.join(getPdfjsPackageRoot(), 'standard_fonts')
+
+  if (!existsSync(path.join(fontDirectory, 'LiberationSans-Regular.ttf'))) {
+    return undefined
+  }
+
+  const fontDirectoryUrl = pathToFileURL(fontDirectory).toString()
+  return fontDirectoryUrl.endsWith('/') ? fontDirectoryUrl : `${fontDirectoryUrl}/`
 }
 
 async function importServerPdfjs(): Promise<PdfjsModule> {
@@ -80,8 +89,11 @@ async function importServerPdfjs(): Promise<PdfjsModule> {
 }
 
 function getPdfjsPackageFileUrl(...segments: string[]) {
-  return pathToFileURL(path.join(process.cwd(), 'node_modules', 'pdfjs-dist', ...segments))
-    .toString()
+  return pathToFileURL(path.join(getPdfjsPackageRoot(), ...segments)).toString()
+}
+
+function getPdfjsPackageRoot() {
+  return path.join(process.cwd(), 'node_modules', 'pdfjs-dist')
 }
 
 function isTextItem(item: unknown): item is TextItem {

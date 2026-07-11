@@ -13,16 +13,9 @@ import GeneratedOutputSection from '@/components/dashboard/generated-output-sect
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import type { SummaryListItem } from '@/lib/summary-types'
+import type { GeneratedDocumentOutput } from '@/lib/document-intelligence-types'
 
 type DashboardState = 'UPLOAD' | 'ANALYZING' | 'INSIGHTS' | 'GENERATING' | 'REPORT'
-
-type GeneratedReportOutput = {
-  title: string
-  summary: string
-  keyInsights: string[]
-  recommendations: string[]
-  conclusion: string
-}
 
 type UploadAnalysisResponse = {
   analysis: {
@@ -51,7 +44,7 @@ type ReportResponse = {
   report: {
     id: string
     title: string
-    output: GeneratedReportOutput
+    output: GeneratedDocumentOutput
     model: string
   }
 }
@@ -65,7 +58,7 @@ type DocumentDetailResponse = {
   report: {
     id: string
     title: string
-    output: GeneratedReportOutput
+    output: GeneratedDocumentOutput
     model: string
     createdAt: string
   } | null
@@ -88,7 +81,7 @@ export default function DashboardPage() {
   const [likelyUserIntent, setLikelyUserIntent] = useState<LikelyUserIntent[]>([])
   const [insightPreview, setInsightPreview] = useState<string[]>([])
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
-  const [generatedOutput, setGeneratedOutput] = useState<GeneratedReportOutput | null>(null)
+  const [generatedOutput, setGeneratedOutput] = useState<GeneratedDocumentOutput | null>(null)
   const [statusText, setStatusText] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -340,15 +333,15 @@ export default function DashboardPage() {
               {currentState === 'UPLOAD' && 'Document Intelligence'}
               {currentState === 'ANALYZING' && 'Processing Document...'}
               {currentState === 'INSIGHTS' && 'Analysis Complete'}
-              {currentState === 'GENERATING' && 'Generating Report...'}
-              {currentState === 'REPORT' && 'Generated Report'}
+              {currentState === 'GENERATING' && 'Opening Workspace...'}
+              {currentState === 'REPORT' && (generatedOutput?.workspaceTitle || 'Analytics Workspace')}
             </h1>
             <p className="text-muted-foreground">
               {currentState === 'UPLOAD' && 'Upload a file to automatically extract insights and generate reports.'}
               {currentState === 'ANALYZING' && 'Extracting context and determining the best actions.'}
               {currentState === 'INSIGHTS' && 'Review the extracted context and choose an action.'}
-              {currentState === 'GENERATING' && 'Building a professional output from the selected recommendation.'}
-              {currentState === 'REPORT' && 'Review the generated output and copy sections as needed.'}
+              {currentState === 'GENERATING' && 'Building a dedicated analytics workspace from the selected recommendation.'}
+              {currentState === 'REPORT' && 'Review the specialized output workspace and choose the next analysis.'}
             </p>
           </div>
           
@@ -409,9 +402,9 @@ export default function DashboardPage() {
                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <Loader2 className="w-8 h-8 animate-spin" />
                 </div>
-                <h3 className="text-2xl font-bold mb-2">Generating Report</h3>
+                <h3 className="text-2xl font-bold mb-2">Opening Workspace</h3>
                 <p className="text-muted-foreground mb-4">
-                  FlowSummary is turning the selected recommendation into an executive-ready output.
+                  FlowSummary is turning the selected recommendation into a purpose-built analytics workspace.
                 </p>
               </div>
             </div>

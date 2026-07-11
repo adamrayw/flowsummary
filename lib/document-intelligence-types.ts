@@ -85,10 +85,83 @@ export type DocumentAnalysis = {
   model: string
 }
 
-export type GeneratedDocumentReport = {
+export type OutputRendererType =
+  | 'executive-dashboard'
+  | 'regional-gap'
+  | 'data-quality'
+  | 'executive-summary'
+  | 'presentation'
+  | 'anomaly'
+  | 'root-cause'
+  | 'forecast'
+
+export type OutputMetric = {
+  label: string
+  value: string
+  detail?: string
+  interpretation?: string
+  trend?: string
+  risk?: 'Low' | 'Medium' | 'High' | 'Critical'
+  confidence?: number
+  suggestedAction?: string
+  evidence?: string[]
+  sourceFields?: string[]
+  affectedRecords?: string
+  reasoningSummary?: string
+  tone?: 'neutral' | 'positive' | 'warning' | 'danger'
+}
+
+export type OutputSection = {
+  id: string
   title: string
-  summary: string
-  keyInsights: string[]
-  recommendations: string[]
-  conclusion: string
+  description?: string
+  items: string[]
+  evidence?: string[]
+  score?: number
+}
+
+export type OutputAction = {
+  title: string
+  owner?: string
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical'
+  detail: string
+}
+
+export type OutputSlide = {
+  title: string
+  bullets: string[]
+  speakerNote?: string
+}
+
+export type NextAnalysis = {
+  title: string
+  reason: string
+  renderer?: OutputRendererType
+}
+
+export type OutputHero = {
+  label: string
+  value: string
+  verdict: string
+  detail: string
+  trend?: string
+  risk?: 'Low' | 'Medium' | 'High' | 'Critical'
+  confidence?: number
+}
+
+export type GeneratedDocumentOutput = {
+  title: string
+  workspaceTitle: string
+  renderer: OutputRendererType
+  purpose: string
+  hero: OutputHero
+  aiThinkingSummary: string
+  insightTitle: string
+  statusLine: string
+  metrics: OutputMetric[]
+  sections: OutputSection[]
+  actions: OutputAction[]
+  slides?: OutputSlide[]
+  nextAnalyses: NextAnalysis[]
+  followUpQuestions: string[]
 }

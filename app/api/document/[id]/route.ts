@@ -5,8 +5,8 @@ import type {
   DocumentHealth,
   LikelyUserIntent,
   DocumentRecommendation,
-  GeneratedDocumentReport,
 } from '@/lib/document-intelligence-types'
+import { normalizeStoredOutput } from '@/lib/document-output-engine'
 import { normalizeStoredDocumentProfile } from '@/lib/document-storage'
 import { prisma } from '@/lib/prisma'
 import { getAuthorizedRaytechUser } from '@/lib/raytech-account'
@@ -169,29 +169,7 @@ function normalizeRecommendations(value: Prisma.JsonValue): DocumentRecommendati
 }
 
 function normalizeReportOutput(value: Prisma.JsonValue) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null
-  }
-
-  const record = value as Record<string, Prisma.JsonValue>
-  const title = getString(record.title)
-  const summary = getString(record.summary)
-  const keyInsights = getStringArray(record.keyInsights)
-  const recommendations = getStringArray(record.recommendations)
-  const conclusion = getString(record.conclusion)
-
-  if (!title || !summary || keyInsights.length === 0 || recommendations.length === 0 || !conclusion) {
-    return null
-  }
-
-  return {
-    title,
-    summary,
-    keyInsights,
-    recommendations,
-    conclusion,
-    model: getString(record.model),
-  } satisfies GeneratedDocumentReport & { model: string }
+  return normalizeStoredOutput(value)
 }
 
 function buildInsightPreview(

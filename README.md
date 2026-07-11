@@ -62,6 +62,17 @@ npm run prisma:generate
 npm run prisma:migrate
 ```
 
+For production deployments, run the deployed migrations and rebuild after Prisma Client is generated:
+
+```bash
+npm run prisma:deploy
+npm run prisma:generate
+npm run build
+pm2 restart flowsumm
+```
+
+If PM2 runs the app from a different directory, set its `cwd` to the FlowSummary project root so server-side file extraction can resolve `node_modules` correctly.
+
 The dashboard uses:
 
 - `GET /api/summaries` for sidebar history.

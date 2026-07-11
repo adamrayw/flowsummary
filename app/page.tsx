@@ -32,22 +32,23 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 
 const thinkingSteps = [
-  'Reading document',
-  'Detecting document type',
-  'Extracting KPIs',
-  'Finding anomalies',
-  'Understanding business context',
-  'Predicting user intent',
-  'Selecting best outputs',
+  'Upload',
+  'Document Detection',
+  'Document Understanding',
+  'Business Reasoning',
+  'Intent Inference',
+  'Recommended Actions',
+  'Living Workspace',
+  'Decision Support',
 ]
 
 const analystFlow = [
-  { label: 'Upload', detail: 'PDF, Excel, Word, CSV, or raw text' },
-  { label: 'Understand', detail: 'Type, structure, language, dates, entities' },
-  { label: 'Explore', detail: 'Patterns, missing values, duplicates, anomalies' },
-  { label: 'Infer intent', detail: 'Likely objective, audience, and decision context' },
-  { label: 'Recommend', detail: 'Best analysis and output for this document' },
-  { label: 'Generate', detail: 'Executive-ready reports, briefs, and action plans' },
+  { label: 'Detect', detail: 'Identifies document type, structure, fields, language, dates, entities, and business signals.' },
+  { label: 'Understand', detail: 'Builds document intelligence from metrics, dimensions, evidence, risks, and operational context.' },
+  { label: 'Reason', detail: 'Connects patterns to likely business meaning instead of treating the upload as plain text.' },
+  { label: 'Recommend', detail: 'Suggests the right investigation, action, or output before the team writes a prompt.' },
+  { label: 'Workspace', detail: 'Creates a Living Workspace where context, evidence, copilot answers, and actions stay connected.' },
+  { label: 'Decide', detail: 'Turns the investigation into decision support for executives, operators, and follow-up teams.' },
 ]
 
 const documents = [
@@ -69,53 +70,86 @@ const documents = [
 const capabilities = [
   {
     icon: SearchCheck,
-    title: 'Understands',
-    text: 'Detects document type, structure, metrics, dimensions, language, and business context automatically.',
+    title: 'Document Intelligence',
+    text: 'Detects what the document is, which fields matter, and how the information should be interpreted.',
   },
   {
     icon: LineChart,
-    title: 'Explores',
-    text: 'Looks for trends, anomalies, duplicate records, missing values, unusual distributions, and risks.',
+    title: 'Business Reasoning',
+    text: 'Connects KPIs, anomalies, and evidence to business context instead of returning a generic summary.',
   },
   {
     icon: Target,
-    title: 'Infers',
-    text: 'Predicts the likely objective: executive summary, audit, dashboard, risk review, or investigation.',
+    title: 'Intent Inference',
+    text: 'Predicts whether the team needs a dashboard, root cause analysis, forecast, presentation, or audit trail.',
   },
   {
     icon: ListChecks,
-    title: 'Recommends',
-    text: 'Prioritizes outcome-driven actions based on what the document actually contains.',
+    title: 'Recommended Actions',
+    text: 'Prioritizes next steps based on evidence, confidence, urgency, and the likely decision being made.',
   },
   {
     icon: Presentation,
-    title: 'Generates',
-    text: 'Creates management summaries, board briefs, action plans, and professional reports.',
+    title: 'Living Outputs',
+    text: 'Creates workspaces that teams can explore, question, validate, and turn into executive-ready outputs.',
   },
 ]
 
 const enterpriseFeatures = [
-  { icon: Gauge, title: 'Document health score', text: 'Completeness, consistency, reliability, missing values, duplicates, and risk signals.' },
-  { icon: Database, title: 'Structured analysis history', text: 'Classifications, profiles, recommendations, and generated reports are saved for review.' },
+  { icon: Gauge, title: 'Explainable analysis', text: 'Confidence, evidence, source fields, and reasoning stay visible inside each investigation.' },
+  { icon: Database, title: 'Continuous context', text: 'Analysis history, workspace state, recommendations, and generated outputs remain connected.' },
   { icon: ShieldCheck, title: 'RayTech Account access', text: 'Built into the RayTech ecosystem with authenticated workspace flows.' },
-  { icon: LockKeyhole, title: 'Enterprise-ready posture', text: 'Designed for controlled document workflows, repeatable outputs, and audit-aware teams.' },
+  { icon: LockKeyhole, title: 'Enterprise-ready posture', text: 'Designed for controlled document workflows, repeatable reviews, and audit-aware teams.' },
+]
+
+const livingWorkspaces = [
+  {
+    icon: BarChart3,
+    title: 'Executive Dashboard',
+    text: 'Decision metrics, risk signals, recommended actions, and confidence in one operating view.',
+  },
+  {
+    icon: SearchCheck,
+    title: 'Root Cause Investigation',
+    text: 'Follow the strongest signal from KPI to dimension, evidence, and recommended next action.',
+  },
+  {
+    icon: LineChart,
+    title: 'Forecast Workspace',
+    text: 'Turn current signals into scenarios, assumptions, and confidence-aware decision paths.',
+  },
+  {
+    icon: Presentation,
+    title: 'Presentation Workspace',
+    text: 'Generate executive-ready narratives while preserving the evidence behind each slide.',
+  },
+  {
+    icon: Sparkles,
+    title: 'AI Copilot',
+    text: 'Ask follow-up questions that inherit the active KPI, dimension, filters, and reasoning context.',
+  },
+  {
+    icon: FileCheck2,
+    title: 'Evidence Viewer',
+    text: 'Inspect source fields, supporting findings, confidence, and affected records before deciding.',
+  },
 ]
 
 const examples = [
   {
     title: 'Attendance anomaly investigation',
     input: 'Monthly attendance file with employee, region, check-in, check-out, status, and leave reason.',
-    output: 'Flags unusual absence patterns, missing leave reasons, late-arrival clusters, and manager actions.',
+    output: 'Creates an anomaly workspace with evidence, affected groups, recommended owner actions, and follow-up questions.',
   },
   {
     title: 'Financial board brief',
     input: 'Finance report with revenue, expense, profit, budget, variance, and reporting period.',
-    output: 'Explains performance movement, risk areas, budget concerns, and leadership recommendations.',
+    output: 'Builds an executive dashboard, highlights variance drivers, and prepares a decision-ready presentation path.',
   },
   {
     title: 'Contract risk review',
     input: 'Vendor agreement with obligations, payment terms, renewal windows, and termination language.',
-    output: 'Extracts key dates, operational obligations, renewal risks, and negotiation follow-ups.',
+    output: 'Opens an evidence-backed risk workspace with obligations, renewal exposure, and recommended negotiation follow-ups.',
   },
 ]
 
@@ -151,9 +185,9 @@ export default function Page() {
 
           <div className="hidden items-center gap-8 md:flex">
             <a href="#thinking" className="text-sm text-muted-foreground transition hover:text-foreground">How it thinks</a>
+            <a href="#workspaces" className="text-sm text-muted-foreground transition hover:text-foreground">Workspaces</a>
             <a href="#documents" className="text-sm text-muted-foreground transition hover:text-foreground">Documents</a>
             <a href="#comparison" className="text-sm text-muted-foreground transition hover:text-foreground">Comparison</a>
-            <a href="#examples" className="text-sm text-muted-foreground transition hover:text-foreground">Examples</a>
           </div>
 
           {isAuthenticated ? (
@@ -215,13 +249,14 @@ export default function Page() {
             <div className="max-w-4xl">
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
                 <Sparkles className="h-4 w-4" />
-                Enterprise AI Analyst for documents
+                Enterprise AI Analyst under RayTech Platform
               </div>
               <h1 className="max-w-4xl text-4xl font-bold leading-tight text-balance sm:text-5xl md:text-7xl">
-                Documents in. <span className="text-primary">Decisions out.</span>
+                Stop reading reports. <span className="text-primary">Start investigating with AI.</span>
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg md:text-xl md:leading-8">
-                Upload any report. FlowSummary understands it before generating anything.
+                Upload spreadsheets, reports, or operational documents. FlowSummary understands your business,
+                recommends the best investigation, and creates interactive workspaces that turn information into decisions.
               </p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
                 <Link href={isAuthenticated ? '/dashboard' : '/signup'}>
@@ -232,7 +267,7 @@ export default function Page() {
                 </Link>
                 <a href="#interactive-demo">
                   <Button size="lg" variant="outline" className="px-5">
-                    See AI thinking
+                    See analyst workflow
                   </Button>
                 </a>
               </div>
@@ -243,38 +278,38 @@ export default function Page() {
           </div>
         </section>
 
-        <Section id="problem" eyebrow="Problem" title="Most document tools stop at text." description="Business teams do not just need a shorter document. They need to know what the document is, what changed, what looks risky, and what decision should happen next.">
+        <Section id="problem" eyebrow="Problem" title="Most AI tools stop at the answer." description="Chat interfaces can read documents and generate reports, but enterprise teams still have to choose the investigation, preserve context, validate evidence, and decide what to do next.">
           <div className="grid gap-4 md:grid-cols-5">
-            {['Read', 'Analyze', 'Write', 'Review', 'Present'].map((step) => (
+            {['Prompt', 'Read', 'Summarize', 'Copy', 'Repeat'].map((step) => (
               <ProcessCard key={step} label={step} muted />
             ))}
           </div>
         </Section>
 
-        <Section id="solution" eyebrow="Solution" title="FlowSummary works like an experienced analyst." description="It understands the document, explores the evidence, infers the user’s intent, and recommends the most useful output before the user writes a prompt.">
+        <Section id="solution" eyebrow="Solution" title="FlowSummary works like an analyst, not a document chatbot." description="It understands business documents, recommends the right investigation, and creates Living Workspaces that help teams make confident decisions.">
           <div className="grid gap-4 md:grid-cols-5">
-            {['Upload', 'Understand', 'Recommend', 'Generate', 'Present'].map((step) => (
+            {['Understand', 'Investigate', 'Explain', 'Recommend', 'Decide'].map((step) => (
               <ProcessCard key={step} label={step} />
             ))}
           </div>
         </Section>
 
-        <Section id="thinking" eyebrow="How FlowSummary Thinks" title="It analyzes before it answers." description="Every upload follows a structured analyst process. The product does not wait for “what should I do?” It explains, explores, and recommends.">
+        <Section id="thinking" eyebrow="How FlowSummary Thinks" title="It reasons before it generates." description="FlowSummary follows a structured analyst pipeline so the output is grounded in document intelligence, business context, evidence, and user intent.">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <GlassCard>
               <div className="mb-5 flex items-center gap-2 text-sm font-medium text-primary">
                 <Activity className="h-4 w-4" />
-                Reading document...
+                Analyst pipeline
               </div>
               <div className="space-y-3">
                 {thinkingSteps.map((step, index) => (
                   <div key={step} className="flex items-center justify-between rounded-lg border border-border bg-background/40 px-3 py-2">
                     <span className="text-sm">{step}</span>
-                    <span className={`h-2 w-2 rounded-full ${index < 6 ? 'bg-primary' : 'bg-amber-400'}`} />
+                    <span className={`h-2 w-2 rounded-full ${index < 7 ? 'bg-primary' : 'bg-amber-400'}`} />
                   </div>
                 ))}
               </div>
-              <p className="mt-5 text-sm text-muted-foreground">Done. Recommended output: Executive decision brief.</p>
+              <p className="mt-5 text-sm text-muted-foreground">Done. Recommended next step: open a Living Workspace with evidence and copilot context.</p>
             </GlassCard>
             <div className="grid gap-4 sm:grid-cols-2">
               {capabilities.map((capability) => (
@@ -284,7 +319,7 @@ export default function Page() {
           </div>
         </Section>
 
-        <Section id="how-it-works" eyebrow="How It Works" title="A repeatable path from file to decision." description="FlowSummary treats each upload as business evidence, not a generic text block.">
+        <Section id="how-it-works" eyebrow="How It Works" title="A repeatable path from document to decision support." description="FlowSummary does not ask teams to decide what analysis to run first. It detects the document, infers the likely objective, and opens the workspace that fits the business problem.">
           <div className="grid gap-4 lg:grid-cols-6">
             {analystFlow.map((step, index) => (
               <GlassCard key={step.label}>
@@ -298,7 +333,11 @@ export default function Page() {
           </div>
         </Section>
 
-        <Section id="documents" eyebrow="Supported Documents" title="Built for every document." description="FlowSummary adapts its analysis to the document type, then recommends the outputs executives and operators usually need.">
+        <Section id="workspaces" eyebrow="Living Workspace" title="Collaborate with AI instead of receiving static reports." description="Each analysis becomes an interactive workspace. Teams can explore KPIs, compare segments, forecast scenarios, ask the copilot follow-up questions, and inspect evidence without losing context.">
+          <LivingWorkspaceShowcase />
+        </Section>
+
+        <Section id="documents" eyebrow="Supported Documents" title="Built for business documents." description="FlowSummary adapts its reasoning to the document type, then recommends the investigation, workspace, and output enterprise teams usually need next.">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {documents.map((document) => (
               <div key={document} className="rounded-lg border border-border bg-card/50 px-4 py-3 text-sm font-medium">
@@ -308,7 +347,7 @@ export default function Page() {
           </div>
         </Section>
 
-        <Section id="enterprise" eyebrow="Enterprise Features" title="Designed for recurring analysis work." description="FlowSummary keeps the analyst workflow structured enough for teams, saved history, repeatable reviews, and management-ready outputs.">
+        <Section id="enterprise" eyebrow="Enterprise Features" title="Designed for recurring investigation work." description="FlowSummary keeps the analyst workflow structured enough for explainable reviews, continuous decision support, and management-ready outputs.">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {enterpriseFeatures.map((feature) => (
               <CapabilityCard key={feature.title} {...feature} />
@@ -316,21 +355,21 @@ export default function Page() {
           </div>
         </Section>
 
-        <Section id="comparison" eyebrow="Comparison" title="Traditional AI waits. FlowSummary understands first." description="The experience is built around proactive document intelligence, not open-ended prompting.">
+        <Section id="comparison" eyebrow="Comparison" title="Why FlowSummary is different from chat AI and BI dashboards." description="Traditional AI can answer prompts. BI dashboards can show metrics. FlowSummary connects documents, reasoning, evidence, recommended actions, and continuous investigation in one analyst workflow.">
           <div className="grid gap-5 lg:grid-cols-2">
             <ComparisonPanel
               title="Traditional AI"
               muted
-              items={['Waits for prompts', 'Treats files as text', 'Returns generic summaries', 'Leaves analysis choices to the user', 'Requires manual follow-up']}
+              items={['Reads documents', 'Answers prompts', 'Generates reports', 'Loses analysis context between follow-ups', 'Leaves investigation design to the user']}
             />
             <ComparisonPanel
               title="FlowSummary"
-              items={['Understands first', 'Classifies the document', 'Explores anomalies and risk', 'Predicts the likely objective', 'Recommends the best outputs']}
+              items={['Understands business context', 'Recommends investigations', 'Creates interactive workspaces', 'Preserves analysis context', 'Supports continuous decision making']}
             />
           </div>
         </Section>
 
-        <Section id="interactive-demo" eyebrow="Interactive Demo" title="Watch the analyst path." description="Select a stage to see how FlowSummary moves from raw document to decision-ready output.">
+        <Section id="interactive-demo" eyebrow="Interactive Demo" title="Watch the analyst path." description="Select a stage to see how FlowSummary moves from document intelligence to a decision-support workspace.">
           <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
             <div className="space-y-2">
               {analystFlow.map((step, index) => (
@@ -351,12 +390,12 @@ export default function Page() {
             <GlassCard className="bg-card/70">
               <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
                 <FileCheck2 className="h-4 w-4 text-primary" />
-                Analyst workspace
+                Living Workspace
               </div>
               <h3 className="text-2xl font-semibold">{analystFlow[activeDemoStep].label}</h3>
               <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">{analystFlow[activeDemoStep].detail}</p>
               <div className="mt-6 grid gap-3 md:grid-cols-3">
-                {['Document detected', 'KPIs extracted', 'Next action selected'].map((item) => (
+                {['Context preserved', 'Evidence attached', 'Copilot ready'].map((item) => (
                   <div key={item} className="rounded-lg border border-border bg-background/40 p-3 text-sm text-muted-foreground">
                     <Check className="mb-3 h-4 w-4 text-primary" />
                     {item}
@@ -367,7 +406,7 @@ export default function Page() {
           </div>
         </Section>
 
-        <Section id="examples" eyebrow="Examples" title="Outputs that support decisions." description="FlowSummary changes its output based on the document type and the likely business objective.">
+        <Section id="examples" eyebrow="Examples" title="Investigations that support decisions." description="FlowSummary changes its workspace based on the document type, available evidence, and likely business objective.">
           <div className="grid gap-4 lg:grid-cols-3">
             {examples.map((example) => (
               <GlassCard key={example.title}>
@@ -384,10 +423,11 @@ export default function Page() {
         <section className="border-t border-border bg-card/40 px-6 py-20">
           <div className="mx-auto max-w-4xl text-center">
             <h2 className="text-4xl font-bold leading-tight md:text-6xl">
-              Stop reading reports. <span className="text-primary">Start making decisions.</span>
+              Put document intelligence to work. <span className="text-primary">Open a Living Workspace.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
-              Upload a document and let FlowSummary find the context, risks, intent, and best next output.
+              Upload a business document and let FlowSummary understand the context, recommend the investigation,
+              preserve evidence, and support the next decision.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
               <Link href={isAuthenticated ? '/dashboard' : '/signup'}>
@@ -414,10 +454,10 @@ export default function Page() {
               <span className="font-semibold">FlowSummary</span>
             </div>
             <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
-              Enterprise AI Analyst for document intelligence. Part of the RayTech ecosystem.
+              Enterprise AI Analyst for document intelligence, Living Workspaces, and decision support. Part of the RayTech ecosystem.
             </p>
           </div>
-          <FooterColumn title="Product" links={['How it thinks', 'Documents', 'Comparison', 'Examples']} />
+          <FooterColumn title="Product" links={['How it thinks', 'Living Workspace', 'Documents', 'Comparison']} />
           <FooterColumn title="RayTech" links={['RayTech Account', 'FlowNote', 'FlowSign', 'raytech.cloud']} />
           <FooterColumn title="Legal" links={['Privacy', 'Terms']} />
         </div>
@@ -428,19 +468,19 @@ export default function Page() {
 
 function HeroSurface() {
   const thinking = [
-    { icon: Upload, text: 'Upload Report.pdf', delay: '0s' },
-    { icon: Activity, text: 'Reading document...', delay: '1.1s' },
-    { icon: FileText, text: 'Financial Report detected', meta: '98% confidence', delay: '2.2s' },
-    { icon: BarChart3, text: '12 KPIs extracted', delay: '3.3s' },
-    { icon: AlertTriangle, text: '4 anomalies discovered', delay: '4.4s' },
-    { icon: Target, text: 'User intent predicted', delay: '5.5s' },
-    { icon: ClipboardCheck, text: 'Recommended outputs ready', delay: '6.6s' },
+    { icon: Upload, text: 'Upload Finance.xlsx', delay: '0s' },
+    { icon: FileText, text: 'Document detected', meta: 'Financial performance report', delay: '1.1s' },
+    { icon: SearchCheck, text: 'Business context understood', delay: '2.2s' },
+    { icon: BarChart3, text: 'KPIs and variance extracted', delay: '3.3s' },
+    { icon: AlertTriangle, text: 'Risk signals identified', delay: '4.4s' },
+    { icon: Target, text: 'Intent inferred', meta: 'Executive investigation', delay: '5.5s' },
+    { icon: ClipboardCheck, text: 'Living Workspace ready', delay: '6.6s' },
   ]
 
   const outputs = [
-    { icon: FileText, text: 'Executive Summary' },
-    { icon: BarChart3, text: 'Dashboard' },
-    { icon: Presentation, text: 'Presentation' },
+    { icon: BarChart3, text: 'Executive Dashboard' },
+    { icon: SearchCheck, text: 'Root Cause' },
+    { icon: Sparkles, text: 'AI Copilot' },
   ]
 
   return (
@@ -450,7 +490,7 @@ function HeroSurface() {
         <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
           <div>
             <p className="text-sm font-medium">Analyst thinking</p>
-            <p className="mt-1 text-xs text-muted-foreground">Looping product demonstration</p>
+            <p className="mt-1 text-xs text-muted-foreground">From document to investigation</p>
           </div>
           <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary">
             Live analysis
@@ -483,7 +523,7 @@ function HeroSurface() {
 
           <div className="hero-output-panel mt-3 rounded-xl border border-primary/20 bg-primary/10 p-3">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-medium">Recommended outputs</p>
+              <p className="text-sm font-medium">Recommended workspace</p>
               <span className="text-xs text-primary">Done</span>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -503,11 +543,11 @@ function HeroSurface() {
 
 function MobileHeroDemo() {
   const items = [
-    { text: 'Reading document...', delay: '0.6s' },
-    { text: 'Financial Report detected', delay: '1.8s' },
-    { text: '12 KPIs extracted', delay: '3s' },
-    { text: '4 anomalies discovered', delay: '4.2s' },
-    { text: 'User intent predicted', delay: '5.4s' },
+    { text: 'Document detected', delay: '0.6s' },
+    { text: 'Business context understood', delay: '1.8s' },
+    { text: 'Risk signals identified', delay: '3s' },
+    { text: 'Investigation recommended', delay: '4.2s' },
+    { text: 'Living Workspace ready', delay: '5.4s' },
   ]
 
   return (
@@ -515,7 +555,7 @@ function MobileHeroDemo() {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-sm font-medium">Analyst thinking</p>
-          <p className="mt-1 text-xs text-muted-foreground">Report.pdf</p>
+          <p className="mt-1 text-xs text-muted-foreground">Finance.xlsx</p>
         </div>
         <Activity className="h-4 w-4 animate-pulse text-primary" />
       </div>
@@ -532,7 +572,68 @@ function MobileHeroDemo() {
         ))}
       </div>
       <div className="hero-output-panel mt-3 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
-        Recommended outputs ready
+        Living Workspace ready
+      </div>
+    </div>
+  )
+}
+
+function LivingWorkspaceShowcase() {
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+      <GlassCard className="overflow-hidden bg-card/70">
+        <div className="mb-5 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-primary">Executive Dashboard</p>
+            <h3 className="mt-1 text-2xl font-semibold">Financial performance investigation</h3>
+          </div>
+          <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary">
+            Context preserved
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {['Revenue variance', 'Margin pressure', 'Forecast confidence'].map((metric, index) => (
+            <div key={metric} className="rounded-lg border border-border bg-background/40 p-4">
+              <p className="text-xs text-muted-foreground">{metric}</p>
+              <p className="mt-2 text-2xl font-semibold text-foreground">{index === 0 ? '12.4%' : index === 1 ? 'High' : '78%'}</p>
+              <div className="mt-4 h-1.5 rounded-full bg-border">
+                <div className={`h-full rounded-full bg-primary ${index === 0 ? 'w-3/4' : index === 1 ? 'w-5/6' : 'w-2/3'}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-lg border border-border bg-background/40 p-4">
+            <p className="text-sm font-medium">Recommended action</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Open root cause investigation for margin pressure before generating the board presentation.
+            </p>
+          </div>
+          <div className="rounded-lg border border-primary/20 bg-primary/10 p-4">
+            <p className="text-sm font-medium">AI Copilot</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              “The strongest signal is expense growth in the current period. Evidence is attached from Budget, Actual, and Variance fields.”
+            </p>
+          </div>
+        </div>
+      </GlassCard>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+        {livingWorkspaces.map((workspace) => (
+          <GlassCard key={workspace.title} className="p-4">
+            <div className="flex gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                <workspace.icon className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="font-semibold">{workspace.title}</h3>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{workspace.text}</p>
+              </div>
+            </div>
+          </GlassCard>
+        ))}
       </div>
     </div>
   )

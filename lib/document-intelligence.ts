@@ -5,9 +5,15 @@ import type {
   DocumentHealth,
   DocumentProfile,
   DocumentRecommendation,
-  GeneratedDocumentReport,
+  GeneratedDocumentOutput,
   LikelyUserIntent,
 } from '@/lib/document-intelligence-types'
+import {
+  buildRuleBasedOutput,
+  normalizeOutputDraft,
+  selectOutputRenderer,
+  type OutputDraft,
+} from '@/lib/document-output-engine'
 
 const MAX_ANALYSIS_CHARS = 30_000
 const MAX_REPORT_CHARS = 60_000
@@ -22,8 +28,6 @@ type AnalysisDraft = {
   insightPreview?: unknown
   recommendations?: unknown
 }
-
-type ReportDraft = Partial<GeneratedDocumentReport>
 
 export async function analyzeDocumentWithAI(params: {
   documentId: string
@@ -81,8 +85,9 @@ export async function generateDocumentReportWithAI(params: {
   profile: DocumentProfile
   classification: DocumentClassification
   recommendation: DocumentRecommendation
-}): Promise<{ output: GeneratedDocumentReport; model: string }> {
+}): Promise<{ output: GeneratedDocumentOutput; model: string }> {
   const fallback = buildRuleBasedReport(params)
+  const renderer = selectOutputRenderer(params)
 
   if (!hasOpenRouterConfig()) {
     return {
@@ -94,24 +99,34 @@ export async function generateDocumentReportWithAI(params: {
   try {
     const response = await generateJsonWithOpenRouter({
       systemPrompt: [
-        'You are FlowSummary, an AI analyst that generates executive-ready business outputs.',
-        'Generate the selected report based on the uploaded document, extracted profile, classification, and selected recommendation.',
-        'Use a professional enterprise tone. Be concrete, mention data quality caveats, and avoid unsupported claims.',
+        'You are FlowSummary, an enterprise AI analyst that opens specialized business workspaces.',
+        'A Recommended Action is not a prompt. It is an AI application with its own renderer, layout, sections, and next-analysis path.',
+        `The selected renderer is "${renderer}". Do not change it unless the recommendation clearly requires a better supported renderer.`,
+        'Think in workspaces, not reports. Use workspace titles such as Executive Decision Workspace, Forecast Workspace, Data Quality Audit Workspace, Root Cause Investigation Workspace, and Presentation Workspace.',
+        'Every output must start from a hero outcome: the most important business signal, value, verdict, risk, trend, and confidence.',
+        'Every KPI must explain business meaning, trend, risk, confidence, and suggested action. Never output raw numbers only.',
+        'KPI names must adapt to document type. Attendance uses Attendance, Late, Leave, Remote, Compliance. Finance uses Revenue, Profit, Cash Flow, Expenses, Margin. Sales uses Revenue, Conversion, Top Products, Growth, Forecast. Inventory uses Stock, Turnover, Backorder, Demand, Supply. Construction uses Progress, Budget, Delay, Quality, Safety.',
+        'Include one concise aiThinkingSummary paragraph describing how the AI analyzed the document and why this workspace was opened.',
+        'Never return the generic sections Summary, Key Insights, Recommendations, or Conclusion.',
+        'Use renderer-specific section names only. Examples: Executive Overview, Regional Ranking, Gap Analysis, Duplicate Records Found, Validation Checklist, Slide Preview, Detected Anomalies, Most Likely Cause, Forecast Summary.',
+        'End with nextAnalyses and followUpQuestions that continue the workflow like a consultant.',
+        'Be concrete, mention data quality caveats, and avoid unsupported numeric claims.',
         'Return JSON with this shape:',
-        '{"title":"string","summary":"one strong executive paragraph","keyInsights":["3-6 insights"],"recommendations":["3-6 recommended actions"],"conclusion":"short closing paragraph"}',
+        '{"title":"string","workspaceTitle":"string","renderer":"executive-dashboard|regional-gap|data-quality|executive-summary|presentation|anomaly|root-cause|forecast","purpose":"string","hero":{"label":"string","value":"string","verdict":"string","detail":"string","trend":"string","risk":"Low|Medium|High|Critical","confidence":91},"aiThinkingSummary":"one concise paragraph","insightTitle":"Attendance Insights|Financial Insights|Inventory Insights|Sales Insights|Project Insights|Compliance Insights|Business Insights","statusLine":"string","metrics":[{"label":"string","value":"string","detail":"string","interpretation":"string","trend":"string","risk":"Low|Medium|High|Critical","confidence":91,"suggestedAction":"string","evidence":["supporting fact"],"sourceFields":["field name"],"affectedRecords":"string","reasoningSummary":"string","tone":"neutral|positive|warning|danger"}],"sections":[{"id":"string","title":"string","description":"string","items":["string"],"evidence":["string"],"score":85}],"actions":[{"title":"Generate Executive PPT","owner":"string","priority":"Low|Medium|High|Critical","detail":"what will happen when selected"}],"slides":[{"title":"string","bullets":["string"],"speakerNote":"string"}],"nextAnalyses":[{"title":"string","reason":"string","renderer":"executive-dashboard|regional-gap|data-quality|executive-summary|presentation|anomaly|root-cause|forecast"}],"followUpQuestions":["string"]}',
       ].join('\n'),
       userPrompt: JSON.stringify({
+        selectedRenderer: renderer,
         selectedRecommendation: params.recommendation,
         classification: params.classification,
         profile: params.profile,
         documentExcerpt: clampText(params.sourceText, MAX_REPORT_CHARS),
       }),
-      maxTokens: 1800,
+      maxTokens: 2400,
       temperature: 0.2,
     })
 
     return {
-      output: normalizeReportDraft(response.data as ReportDraft, fallback),
+      output: normalizeOutputDraft(response.data as OutputDraft, fallback),
       model: response.model,
     }
   } catch (error) {
@@ -239,11 +254,25 @@ function buildRecommendations(
   const byType: Record<string, Array<Omit<DocumentRecommendation, 'id' | 'isPrimary' | 'priorityScore' | 'confidence' | 'exportFormats'>>> = {
     'Attendance Report': [
       {
-        title: 'Absence Analysis',
-        description: 'Analyze absence, late arrival, and attendance risk patterns across employees or departments.',
+        title: 'Executive Dashboard',
+        description: 'Open a KPI dashboard for attendance rate, late arrivals, leave, remote work, regional performance, and priority actions.',
         type: 'dashboard',
-        whyRecommended: 'Attendance data usually creates the most value when anomalies and absence patterns are surfaced first.',
-        templateId: 'attendance-absence-analysis',
+        whyRecommended: 'Executives need a fast operating view before drilling into regional or employee-level issues.',
+        templateId: 'attendance-executive-dashboard',
+      },
+      {
+        title: 'Regional Attendance Gap Analysis',
+        description: 'Investigate attendance differences across regions, departments, or teams and identify priority gaps.',
+        type: 'report',
+        whyRecommended: 'Attendance fields are useful for finding where performance differs and which segment needs attention first.',
+        templateId: 'attendance-regional-gap-analysis',
+      },
+      {
+        title: 'Duplicate Record Cleansing',
+        description: 'Audit duplicate rows, affected records, possible causes, cleaning steps, and validation checklist.',
+        type: 'report',
+        whyRecommended: 'Attendance reports often contain repeated exports or duplicated rows that can distort absence and late-arrival KPIs.',
+        templateId: 'attendance-duplicate-cleansing',
       },
       {
         title: 'Executive Summary',
@@ -253,11 +282,32 @@ function buildRecommendations(
         templateId: 'attendance-executive-summary',
       },
       {
-        title: 'Department Comparison',
-        description: 'Compare attendance performance across departments, teams, or regions.',
+        title: 'Presentation',
+        description: 'Prepare a slide-ready management presentation with overview, KPIs, findings, recommendations, and action plan.',
         type: 'presentation',
-        whyRecommended: 'Department-level dimensions were detected or can be inferred from the document structure.',
-        templateId: 'attendance-department-comparison',
+        whyRecommended: 'Management teams often need attendance findings packaged for a recurring review meeting.',
+        templateId: 'attendance-presentation',
+      },
+      {
+        title: 'Anomaly Detection',
+        description: 'Investigate abnormal late arrival, absence, duplicate, and missing-value behavior.',
+        type: 'report',
+        whyRecommended: 'Anomaly detection helps separate normal attendance variation from exceptions requiring operational follow-up.',
+        templateId: 'attendance-anomaly-detection',
+      },
+      {
+        title: 'Root Cause Analysis',
+        description: 'Explain why the most important attendance issue is likely happening and what evidence supports it.',
+        type: 'report',
+        whyRecommended: 'Root cause analysis turns attendance symptoms into a practical investigation path.',
+        templateId: 'attendance-root-cause-analysis',
+      },
+      {
+        title: 'Forecast',
+        description: 'Project future attendance risks and preparation steps based on trend-ready fields.',
+        type: 'dashboard',
+        whyRecommended: 'Recurring attendance uploads can be used to anticipate future staffing and compliance risks.',
+        templateId: 'attendance-forecast',
       },
     ],
     'Financial Report': [
@@ -358,6 +408,13 @@ function buildRecommendations(
 
   const selected = byType[documentType] ?? [
     {
+      title: 'Executive Dashboard',
+      description: 'Open a KPI-style dashboard with document confidence, performance signals, business impact, and priority actions.',
+      type: 'dashboard',
+      whyRecommended: 'A dashboard gives leaders the fastest overview before choosing a deeper analysis path.',
+      templateId: 'general-executive-dashboard',
+    },
+    {
       title: 'Executive Summary',
       description: 'Generate a concise professional summary of the document, key findings, and next actions.',
       type: 'report',
@@ -365,18 +422,32 @@ function buildRecommendations(
       templateId: 'general-executive-summary',
     },
     {
-      title: 'Data Quality Review',
-      description: 'Review missing values, duplicate records, ambiguous fields, and trust issues.',
+      title: 'Duplicate Record Cleansing',
+      description: 'Review duplicate records, affected fields, business risk, cleaning strategy, and validation checklist.',
       type: 'report',
       whyRecommended: 'The document has enough structure to evaluate quality before deeper analysis.',
-      templateId: 'general-data-quality-review',
+      templateId: 'general-duplicate-cleansing',
     },
     {
-      title: 'Action Plan',
-      description: 'Turn the document into a prioritized action plan for management follow-up.',
+      title: 'Presentation',
+      description: 'Prepare slide-ready output for management review.',
+      type: 'presentation',
+      whyRecommended: 'Most business documents eventually need a presentation-ready narrative.',
+      templateId: 'general-presentation',
+    },
+    {
+      title: 'Root Cause Analysis',
+      description: 'Investigate why the most important issue may be happening.',
       type: 'report',
-      whyRecommended: 'Most business documents benefit from a clear next-step plan.',
-      templateId: 'general-action-plan',
+      whyRecommended: 'Most business documents benefit from explaining causes before assigning actions.',
+      templateId: 'general-root-cause-analysis',
+    },
+    {
+      title: 'Forecast',
+      description: 'Evaluate whether the document can support future trend projection.',
+      type: 'dashboard',
+      whyRecommended: 'If the upload repeats over time, forecasting becomes the next useful management workflow.',
+      templateId: 'general-forecast',
     },
   ]
 
@@ -673,44 +744,8 @@ function buildRuleBasedReport(params: {
   profile: DocumentProfile
   classification: DocumentClassification
   recommendation: DocumentRecommendation
-}): GeneratedDocumentReport {
-  const { profile, classification, recommendation } = params
-  const qualityText =
-    profile.potentialIssues.length > 0
-      ? `Data quality caveat: ${profile.potentialIssues.join('; ')}.`
-      : 'No major data quality issue was detected from the initial profiling pass.'
-
-  return {
-    title: `${recommendation.title} - ${classification.documentType}`,
-    summary: `FlowSummary analyzed ${profile.file.name} as a ${classification.documentType}. The document contains ${profile.dna.rowCount.toLocaleString('en')} records and ${profile.dna.columnCount.toLocaleString('en')} columns or structural fields. ${qualityText}`,
-    keyInsights: [
-      classification.explanation,
-      profile.dna.dateRange ? `The detected reporting period is ${profile.dna.dateRange}.` : 'No reliable reporting period was detected.',
-      profile.mainMetrics.length > 0
-        ? `Primary measurable fields include ${profile.mainMetrics.slice(0, 5).join(', ')}.`
-        : 'The document does not expose obvious numeric metrics from headers alone.',
-      profile.keyDimensions.length > 0
-        ? `Useful segmentation fields include ${profile.keyDimensions.slice(0, 5).join(', ')}.`
-        : 'No strong segmentation dimensions were detected from the document structure.',
-    ],
-    recommendations: [
-      recommendation.whyRecommended,
-      'Validate data quality issues before using this report for final management decisions.',
-      'Compare this document with a previous period if the same report is uploaded regularly.',
-    ],
-    conclusion:
-      'This report is generated from the extracted document profile and should be reviewed against the source file before external distribution.',
-  }
-}
-
-function normalizeReportDraft(draft: ReportDraft, fallback: GeneratedDocumentReport) {
-  return {
-    title: normalizeString(draft.title) || fallback.title,
-    summary: normalizeString(draft.summary) || fallback.summary,
-    keyInsights: normalizeStringArray(draft.keyInsights, fallback.keyInsights).slice(0, 6),
-    recommendations: normalizeStringArray(draft.recommendations, fallback.recommendations).slice(0, 6),
-    conclusion: normalizeString(draft.conclusion) || fallback.conclusion,
-  }
+}): GeneratedDocumentOutput {
+  return buildRuleBasedOutput(params)
 }
 
 function normalizeString(value: unknown) {
