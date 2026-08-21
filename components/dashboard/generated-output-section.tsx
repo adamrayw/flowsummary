@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ClipboardCheck,
   Copy,
+  Download,
   FileText,
   GripVertical,
   LineChart,
@@ -17,6 +18,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Presentation,
+  RefreshCw,
   Search,
   Send,
   ShieldCheck,
@@ -107,6 +109,35 @@ type WorkspaceActionRequest = {
   evidence?: EvidenceTarget
 }
 
+type PresentationAudience = 'Executive Board' | 'Director' | 'Manager' | 'Operations Team' | 'Government' | 'Client' | 'Investor'
+type PresentationStyle = 'Executive' | 'Corporate' | 'Minimal' | 'Government' | 'Startup' | 'Financial' | 'Dark' | 'Light'
+
+type PresentationSlideModel = {
+  id: string
+  title: string
+  subtitle?: string
+  bullets: string[]
+  highlights: string[]
+  confidence?: number
+  evidence: string[]
+  businessImpact?: string
+  speakerNotes: {
+    keyMessage: string
+    emphasize: string[]
+    possibleQuestions: string[]
+    suggestedAnswers: string[]
+  }
+}
+
+type PresentationModel = {
+  title: string
+  audience: PresentationAudience
+  style: PresentationStyle
+  sourceWorkspace: string
+  generatedFrom: string
+  slides: PresentationSlideModel[]
+}
+
 type WorkspaceInteraction = {
   state: WorkspaceState
   activeEvidence: EvidenceTarget | null
@@ -142,12 +173,14 @@ export default function GeneratedOutputSection({ output }: GeneratedOutputSectio
   const [isModalLoading, setIsModalLoading] = useState(false)
   const [isAnalystConsoleOpen, setIsAnalystConsoleOpen] = useState(false)
   const [analystConsoleWidth, setAnalystConsoleWidth] = useState(400)
+  const [presentationModel, setPresentationModel] = useState<PresentationModel | null>(null)
+  const [selectedPresentationSlideId, setSelectedPresentationSlideId] = useState<string | null>(null)
 
   useEffect(() => {
     const storedOpen = window.localStorage.getItem('flowsummary:analyst-console-open')
     const storedWidth = Number(window.localStorage.getItem('flowsummary:analyst-console-width'))
 
-    if (storedOpen === 'true') {
+    if (storedOpen === 'true' && window.innerWidth >= 1280) {
       setIsAnalystConsoleOpen(true)
     }
 
@@ -299,6 +332,13 @@ export default function GeneratedOutputSection({ output }: GeneratedOutputSectio
     handleSectionEvidence,
   }
 
+  const openPresentationWorkspace = () => {
+    const model = buildPresentationModelFromWorkspace(output, workspaceState, 'Executive Board', 'Corporate')
+    setPresentationModel(model)
+    setSelectedPresentationSlideId(model.slides[0]?.id || null)
+    updateState({}, 'Presentation Workspace opened from current investigation')
+  }
+
   const renderer =
     output.renderer === 'executive-dashboard' ? (
       <ExecutiveDashboardRenderer output={output} workspace={workspace} />
@@ -328,6 +368,7 @@ export default function GeneratedOutputSection({ output }: GeneratedOutputSectio
       }
     >
       <div className="min-w-0 space-y-6">
+        <PresentationEntryCard onOpen={openPresentationWorkspace} output={output} />
         <WorkspaceStateBar output={output} workspace={workspace} />
         {renderer}
         <WorkspaceTimeline events={workspaceState.analysisHistory} />
@@ -340,6 +381,17 @@ export default function GeneratedOutputSection({ output }: GeneratedOutputSectio
           width={analystConsoleWidth}
           onWidthChange={setAnalystConsoleWidth}
           onClose={() => setIsAnalystConsoleOpen(false)}
+        />
+      )}
+      {presentationModel && (
+        <PresentationWorkspace
+          model={presentationModel}
+          selectedSlideId={selectedPresentationSlideId}
+          output={output}
+          workspaceState={workspaceState}
+          onSelectSlide={setSelectedPresentationSlideId}
+          onUpdateModel={setPresentationModel}
+          onClose={() => setPresentationModel(null)}
         />
       )}
       {!isAnalystConsoleOpen && (
@@ -379,7 +431,7 @@ export function AnalysisAnalystConsole({ output }: GeneratedOutputSectionProps) 
     analysisHistory: ['Document analysis completed', 'Recommendations prepared'],
     previousReasoning: [output.aiThinkingSummary],
   }))
-  const [isAnalystConsoleOpen, setIsAnalystConsoleOpen] = useState(true)
+  const [isAnalystConsoleOpen, setIsAnalystConsoleOpen] = useState(false)
   const [analystConsoleWidth, setAnalystConsoleWidth] = useState(400)
 
   useEffect(() => {
@@ -387,6 +439,10 @@ export function AnalysisAnalystConsole({ output }: GeneratedOutputSectionProps) 
 
     if (Number.isFinite(storedWidth) && storedWidth >= 380 && storedWidth <= 640) {
       setAnalystConsoleWidth(storedWidth)
+    }
+
+    if (window.innerWidth >= 1280) {
+      setIsAnalystConsoleOpen(true)
     }
   }, [])
 
@@ -449,6 +505,297 @@ export function AnalysisAnalystConsole({ output }: GeneratedOutputSectionProps) 
         AI Analyst
       </Button>
     </>
+  )
+}
+
+function PresentationEntryCard({ onOpen, output }: { onOpen: () => void; output: GeneratedDocumentOutput }) {
+  return (
+    <Card className="border-primary/20 bg-primary/10">
+      <CardContent className="flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <Presentation className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold">Generate Executive Presentation</p>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Open an editable Presentation Workspace generated from {output.workspaceTitle}, including evidence,
+              reasoning, recommendations, and speaker notes.
+            </p>
+          </div>
+        </div>
+        <Button type="button" className="bg-primary hover:bg-primary/90" onClick={onOpen}>
+          Open Presentation Workspace
+          <Presentation className="ml-2 h-4 w-4" />
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function PresentationWorkspace({
+  model,
+  selectedSlideId,
+  output,
+  workspaceState,
+  onSelectSlide,
+  onUpdateModel,
+  onClose,
+}: {
+  model: PresentationModel
+  selectedSlideId: string | null
+  output: GeneratedDocumentOutput
+  workspaceState: WorkspaceState
+  onSelectSlide: (id: string) => void
+  onUpdateModel: (model: PresentationModel) => void
+  onClose: () => void
+}) {
+  const [audience, setAudience] = useState<PresentationAudience>(model.audience)
+  const [style, setStyle] = useState<PresentationStyle>(model.style)
+  const [instruction, setInstruction] = useState('')
+  const [isExporting, setIsExporting] = useState(false)
+  const selectedSlide = model.slides.find((slide) => slide.id === selectedSlideId) || model.slides[0]
+
+  const updateAudienceStyle = (nextAudience = audience, nextStyle = style) => {
+    const nextModel = buildPresentationModelFromWorkspace(output, workspaceState, nextAudience, nextStyle)
+    onUpdateModel(nextModel)
+    onSelectSlide(nextModel.slides[0]?.id || '')
+  }
+
+  const updateSlide = (slideId: string, updater: (slide: PresentationSlideModel) => PresentationSlideModel) => {
+    onUpdateModel({
+      ...model,
+      slides: model.slides.map((slide) => (slide.id === slideId ? updater(slide) : slide)),
+    })
+  }
+
+  const runSlideAction = (action: string) => {
+    if (!selectedSlide) return
+
+    updateSlide(selectedSlide.id, (slide) => transformPresentationSlide(slide, action, output, workspaceState))
+  }
+
+  const exportPptx = async () => {
+    setIsExporting(true)
+    try {
+      const response = await fetch('/api/workspace/presentation/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ presentation: model }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export presentation.')
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${model.title.replace(/[^\w-]+/g, '-').toLowerCase() || 'flowsummary-presentation'}.pptx`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const exportPdf = async () => {
+    setIsExporting(true)
+    try {
+      const response = await fetch('/api/workspace/presentation/export/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ presentation: model }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to export presentation PDF.')
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${model.title.replace(/[^\w-]+/g, '-').toLowerCase() || 'flowsummary-presentation'}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-background/85 p-3 backdrop-blur-md md:p-5">
+      <Card className="mx-auto flex h-full max-w-[1680px] flex-col overflow-hidden border-primary/20 bg-card/95 shadow-2xl">
+        <div className="flex shrink-0 flex-col gap-4 border-b border-border/70 p-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0">
+            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">Presentation Workspace</Badge>
+            <h2 className="mt-3 text-2xl font-bold">{model.title}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Generated from {model.sourceWorkspace}. Edit before exporting.</p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <select
+              value={audience}
+              onChange={(event) => {
+                const nextAudience = event.target.value as PresentationAudience
+                setAudience(nextAudience)
+                updateAudienceStyle(nextAudience, style)
+              }}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            >
+              {['Executive Board', 'Director', 'Manager', 'Operations Team', 'Government', 'Client', 'Investor'].map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+            <select
+              value={style}
+              onChange={(event) => {
+                const nextStyle = event.target.value as PresentationStyle
+                setStyle(nextStyle)
+                updateAudienceStyle(audience, nextStyle)
+              }}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            >
+              {['Executive', 'Corporate', 'Minimal', 'Government', 'Startup', 'Financial', 'Dark', 'Light'].map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+            <Button type="button" variant="outline" onClick={onClose}>Close</Button>
+            <Button type="button" className="bg-primary hover:bg-primary/90" onClick={() => void exportPptx()} disabled={isExporting}>
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Export PPTX
+            </Button>
+            <Button type="button" variant="outline" onClick={() => void exportPdf()} disabled={isExporting}>
+              <Download className="mr-2 h-4 w-4" />
+              Export PDF
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)_360px]">
+          <div className="min-h-0 overflow-y-auto border-b border-border/70 p-4 lg:border-b-0 lg:border-r">
+            <p className="mb-3 text-xs font-medium uppercase tracking-normal text-muted-foreground">Slides</p>
+            <div className="space-y-2">
+              {model.slides.map((slide, index) => (
+                <button
+                  key={slide.id}
+                  type="button"
+                  onClick={() => onSelectSlide(slide.id)}
+                  className={cn(
+                    'w-full rounded-lg border p-3 text-left transition',
+                    slide.id === selectedSlide?.id ? 'border-primary/40 bg-primary/10' : 'border-border bg-background/35 hover:bg-background/60',
+                  )}
+                >
+                  <p className="text-xs text-muted-foreground">Slide {index + 1}</p>
+                  <p className="mt-1 line-clamp-2 text-sm font-semibold">{slide.title}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="min-h-0 min-w-0 overflow-y-auto border-b border-border/70 p-5 lg:border-b-0 2xl:border-r">
+            {selectedSlide && (
+              <div className="mx-auto max-w-5xl space-y-5">
+                <div className="rounded-2xl border border-border bg-background/60 p-6 shadow-2xl md:p-8">
+                  <div className="flex min-h-[520px] flex-col">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-primary">{selectedSlide.subtitle || model.sourceWorkspace}</p>
+                        <h3 className="mt-3 max-w-3xl text-3xl font-bold leading-tight md:text-4xl">{selectedSlide.title}</h3>
+                      </div>
+                      {typeof selectedSlide.confidence === 'number' && (
+                        <Badge variant="outline" className="shrink-0">{selectedSlide.confidence}% confidence</Badge>
+                      )}
+                    </div>
+                    <div className="mt-8 grid flex-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+                      <div className="min-w-0">
+                        <BulletList items={selectedSlide.bullets} />
+                      </div>
+                      <div className="space-y-3">
+                        {selectedSlide.highlights.map((highlight) => (
+                          <div key={highlight} className="rounded-lg border border-primary/20 bg-primary/10 p-3 text-sm text-foreground">
+                            {highlight}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-8 grid gap-3 md:grid-cols-3">
+                      <EvidenceMini label="Evidence Source" value={selectedSlide.evidence[0] || 'Workspace evidence'} />
+                      <EvidenceMini label="Business Impact" value={selectedSlide.businessImpact || output.hero.verdict} />
+                      <EvidenceMini label="Speaker Note" value={selectedSlide.speakerNotes.keyMessage} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border bg-background/35 p-3">
+                  <p className="mb-3 text-xs font-medium uppercase tracking-normal text-muted-foreground">Slide Actions</p>
+                  <div className="flex flex-wrap gap-2">
+                    {['Regenerate', 'Rewrite', 'Expand', 'Summarize', 'More Formal', 'More Technical', 'More Visual', 'Generate Chart', 'Generate Table', 'Generate Timeline', 'Generate Diagram'].map((action) => (
+                      <Button key={action} type="button" variant="outline" size="sm" onClick={() => runSlideAction(action)}>
+                        {action === 'Regenerate' && <RefreshCw className="mr-2 h-3.5 w-3.5" />}
+                        {action}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="min-h-0 overflow-y-auto border-t border-border/70 p-4 lg:col-span-2 2xl:col-span-1 2xl:border-t-0">
+            <p className="text-sm font-semibold">AI Presentation Analyst</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Uses the current slide, audience, tone, workspace findings, and evidence.
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 2xl:grid-cols-1">
+              {['Shorten this slide', 'Make it executive', 'Add supporting evidence', 'Replace bullets with charts', 'Generate speaker notes', 'Create better title'].map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className="rounded-lg border border-border bg-background/40 px-3 py-2 text-left text-sm transition hover:border-primary/40 hover:bg-primary/10"
+                  onClick={() => {
+                    setInstruction(prompt)
+                    runSlideAction(prompt)
+                  }}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+            <Textarea
+              value={instruction}
+              onChange={(event) => setInstruction(event.target.value)}
+              placeholder="Ask about this slide..."
+              className="mt-4 min-h-24 resize-none bg-background/60"
+            />
+            <Button type="button" className="mt-3 w-full bg-primary hover:bg-primary/90" onClick={() => runSlideAction(instruction || 'Rewrite')}>
+              Apply to slide
+            </Button>
+            {selectedSlide && (
+              <div className="mt-5 rounded-lg border border-border bg-background/40 p-3">
+                <p className="text-xs font-medium text-muted-foreground">Speaker Notes</p>
+                <p className="mt-2 text-sm leading-6">{selectedSlide.speakerNotes.keyMessage}</p>
+                <BulletList items={selectedSlide.speakerNotes.emphasize} />
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+function EvidenceMini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-card/60 p-3">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="mt-1 line-clamp-2 text-xs font-medium">{value}</p>
+    </div>
   )
 }
 
@@ -1810,6 +2157,183 @@ function stringifyOutput(output: GeneratedDocumentOutput) {
     .join('\n')
 
   return `${output.workspaceTitle}\n${output.title}\n${output.purpose}\n\n${output.aiThinkingSummary}\n\n${sections}\n\nActions\n${actions}\n\nSuggested Next Analysis\n${next}`
+}
+
+function buildPresentationModelFromWorkspace(
+  output: GeneratedDocumentOutput,
+  state: WorkspaceState,
+  audience: PresentationAudience,
+  style: PresentationStyle,
+): PresentationModel {
+  const confidence = output.hero.confidence || output.metrics[0]?.confidence || 82
+  const evidence = [
+    output.aiThinkingSummary,
+    ...output.metrics.flatMap((metric) => metric.evidence || []),
+    ...output.sections.flatMap((section) => section.evidence || []),
+  ].filter(Boolean)
+  const findings = output.sections.flatMap((section) => section.items).filter(Boolean)
+  const actions = output.actions.map((action) => `${action.title}: ${action.detail}`)
+  const hasCause = output.renderer === 'root-cause' || output.sections.some((section) => section.title.toLowerCase().includes('cause'))
+  const hasForecast = output.renderer === 'forecast'
+
+  const baseSlides: PresentationSlideModel[] = [
+    presentationSlide('executive-summary', 'Executive Summary', output.workspaceTitle, [
+      output.hero.verdict,
+      output.statusLine,
+      `Recommended next decision: ${output.actions[0]?.title || output.nextAnalyses[0]?.title || 'Continue investigation'}.`,
+    ], [output.hero.value, output.hero.label], confidence, evidence, output.hero.detail),
+    presentationSlide('business-context', 'Business Context', `${audience} view`, [
+      `Current workspace: ${output.workspaceTitle}.`,
+      `Active KPI: ${state.selectedKpi}.`,
+      `Investigation context: ${state.selectedDimension}.`,
+    ], [state.selectedRegion, state.selectedTimeRange], confidence, evidence, output.purpose),
+    presentationSlide('key-findings', 'Key Findings', output.insightTitle, findings.slice(0, 4), output.metrics.slice(0, 3).map((metric) => `${metric.label}: ${metric.value}`), confidence, evidence, output.statusLine),
+    presentationSlide('evidence', 'Evidence', 'Explainable signals', evidence.slice(0, 4), output.metrics.flatMap((metric) => metric.sourceFields || []).slice(0, 3), confidence, evidence, 'Evidence is attached from the current Living Workspace.'),
+    presentationSlide('root-cause', 'Root Cause', 'Likely explanation', (hasCause ? findings : [output.aiThinkingSummary]).slice(0, 4), [output.hero.verdict], confidence, evidence, output.hero.detail),
+    presentationSlide('business-impact', 'Business Impact', 'Decision relevance', [
+      output.hero.detail,
+      output.metrics[0]?.interpretation || output.metrics[0]?.detail || output.statusLine,
+      `Risk level: ${output.hero.risk || output.metrics[0]?.risk || 'Contextual'}.`,
+    ], [output.hero.value], confidence, evidence, output.statusLine),
+    presentationSlide('recommendations', 'Recommendations', 'Best next moves', actions.slice(0, 4), output.actions.map((action) => action.priority || 'Medium').slice(0, 3), confidence, evidence, output.actions[0]?.detail),
+    presentationSlide('action-plan', 'Action Plan', 'Ownership and timeline', output.actions.slice(0, 4).map((action) => `${action.priority || 'Medium'} priority - ${action.owner || 'Assign owner'} - ${action.title}`), ['Owner', 'Timeline', 'Expected KPI'], confidence, evidence, output.actions[0]?.detail),
+    presentationSlide('expected-outcome', 'Expected Outcome', hasForecast ? 'Forecast implication' : 'Decision target', [
+      output.nextAnalyses[0]?.reason || 'Reduce uncertainty through the next investigation.',
+      'Validate evidence before external presentation.',
+      'Convert accepted recommendations into accountable actions.',
+    ], [output.nextAnalyses[0]?.title || 'Next workspace'], confidence, evidence, output.statusLine),
+    presentationSlide('next-investigation', 'Next Investigation', 'Continuous analysis', output.nextAnalyses.slice(0, 4).map((item) => `${item.title}: ${item.reason}`), output.followUpQuestions.slice(0, 3), confidence, evidence, output.nextAnalyses[0]?.reason),
+  ]
+
+  return {
+    title: `${output.workspaceTitle} Presentation`,
+    audience,
+    style,
+    sourceWorkspace: output.workspaceTitle,
+    generatedFrom: state.selectedDimension,
+    slides: baseSlides.filter((slide) => {
+      if (slide.id === 'root-cause' && !hasCause && output.renderer !== 'anomaly') return false
+      if (slide.id === 'expected-outcome' && !hasForecast && output.nextAnalyses.length === 0) return false
+      return slide.bullets.length > 0
+    }),
+  }
+}
+
+function presentationSlide(
+  id: string,
+  title: string,
+  subtitle: string,
+  bullets: string[],
+  highlights: string[],
+  confidence: number,
+  evidence: string[],
+  businessImpact?: string,
+): PresentationSlideModel {
+  const cleanBullets = bullets.map((item) => item?.trim()).filter(Boolean).slice(0, 5)
+
+  return {
+    id,
+    title,
+    subtitle,
+    bullets: cleanBullets,
+    highlights: highlights.map((item) => item?.trim()).filter(Boolean).slice(0, 3),
+    confidence,
+    evidence: evidence.slice(0, 4),
+    businessImpact,
+    speakerNotes: {
+      keyMessage: cleanBullets[0] || title,
+      emphasize: cleanBullets.slice(0, 3),
+      possibleQuestions: ['What evidence supports this?', 'What decision is required?', 'What should happen next?'],
+      suggestedAnswers: evidence.slice(0, 3),
+    },
+  }
+}
+
+function transformPresentationSlide(
+  slide: PresentationSlideModel,
+  action: string,
+  output: GeneratedDocumentOutput,
+  state: WorkspaceState,
+): PresentationSlideModel {
+  const normalizedAction = action.toLowerCase()
+  const evidenceLine = slide.evidence[0] || output.aiThinkingSummary
+
+  if (normalizedAction.includes('shorten') || normalizedAction.includes('summarize')) {
+    return {
+      ...slide,
+      bullets: slide.bullets.slice(0, 3).map((bullet) => bullet.length > 110 ? `${bullet.slice(0, 107)}...` : bullet),
+      speakerNotes: { ...slide.speakerNotes, keyMessage: slide.bullets[0] || slide.title },
+    }
+  }
+
+  if (normalizedAction.includes('formal') || normalizedAction.includes('executive')) {
+    return {
+      ...slide,
+      title: slide.title.startsWith('Executive') ? slide.title : `Executive ${slide.title}`,
+      bullets: slide.bullets.map((bullet) => `Decision point: ${bullet.replace(/^Decision point:\s*/, '')}`),
+    }
+  }
+
+  if (normalizedAction.includes('technical')) {
+    return {
+      ...slide,
+      bullets: [...slide.bullets.slice(0, 4), `Validation context: ${state.selectedDimension}, ${state.selectedTimeRange}.`],
+    }
+  }
+
+  if (normalizedAction.includes('chart') || normalizedAction.includes('visual')) {
+    return {
+      ...slide,
+      highlights: [
+        `Chart: ${output.metrics[0]?.label || state.selectedKpi} vs. ${state.selectedDimension}`,
+        ...slide.highlights.slice(0, 2),
+      ],
+    }
+  }
+
+  if (normalizedAction.includes('table')) {
+    return {
+      ...slide,
+      highlights: ['Table: Priority, Owner, Timeline, Expected KPI', ...slide.highlights.slice(0, 2)],
+    }
+  }
+
+  if (normalizedAction.includes('timeline')) {
+    return {
+      ...slide,
+      highlights: ['Timeline: Now, Next 30 days, Next review', ...slide.highlights.slice(0, 2)],
+    }
+  }
+
+  if (normalizedAction.includes('diagram')) {
+    return {
+      ...slide,
+      highlights: ['Diagram: Evidence -> Finding -> Recommendation -> Decision', ...slide.highlights.slice(0, 2)],
+    }
+  }
+
+  if (normalizedAction.includes('evidence')) {
+    return {
+      ...slide,
+      bullets: [...slide.bullets.slice(0, 4), `Evidence: ${evidenceLine}`],
+    }
+  }
+
+  if (normalizedAction.includes('title')) {
+    return {
+      ...slide,
+      title: `${state.selectedKpi}: ${slide.title}`,
+    }
+  }
+
+  return {
+    ...slide,
+    bullets: [...slide.bullets.slice(0, 4), `Speaker focus: connect this slide to ${output.hero.verdict}.`],
+    speakerNotes: {
+      ...slide.speakerNotes,
+      keyMessage: `${slide.speakerNotes.keyMessage} The recommendation remains grounded in current workspace evidence.`,
+    },
+  }
 }
 
 function buildInitialAnalystMessage(output: GeneratedDocumentOutput, state: WorkspaceState): AnalystMessage {
