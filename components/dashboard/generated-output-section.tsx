@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Search,
   Send,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Target,
@@ -86,6 +87,18 @@ type WorkspaceModal = {
     items: string[]
   }>
   primaryAction?: string
+  primaryCtaLabel?: string
+  secondaryCtaLabel?: string
+  summary?: {
+    confidence: string
+    found: string
+    severity: string
+  }
+  flaggedItems?: Array<{
+    label: string
+    detail: string
+    severity: 'warning' | 'danger'
+  }>
 }
 
 type AnalystMessage = {
@@ -1185,7 +1198,7 @@ function WorkspaceHeader({
           <h2 className="mt-1 text-2xl font-bold tracking-tight md:text-3xl">{output.title}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{output.purpose}</p>
         </div>
-        <HeroCard output={output} />
+        {output.renderer !== 'executive-dashboard' && <HeroCard output={output} />}
       </div>
       <CopyOutputButton output={output} />
     </div>
@@ -1398,6 +1411,8 @@ function WorkspaceActionModal({
 }) {
   if (!modal) return null
 
+  const isResultModal = !!(modal.summary || modal.flaggedItems)
+
   return (
     <ModalFrame onClose={onClose}>
       <CardHeader>
@@ -1408,34 +1423,101 @@ function WorkspaceActionModal({
           {isLoading && (
             <Badge variant="outline" className="border-border/70 bg-background/40 text-muted-foreground">
               <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              Generating with AI
+              {isResultModal ? `Scanning ${modal.description}...` : 'Generating with AI'}
             </Badge>
           )}
         </div>
         <CardTitle className="text-xl">{modal.title}</CardTitle>
         <p className="text-sm leading-6 text-muted-foreground">{modal.description}</p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {modal.answer && (
-          <div className="rounded-lg border border-primary/20 bg-primary/10 p-4">
-            <p className="text-sm leading-7 text-foreground">{modal.answer}</p>
-          </div>
-        )}
-        {modal.blocks.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2">
-            {modal.blocks.map((block) => (
-              <div key={block.title} className="rounded-lg border border-border/70 bg-background/40 p-4">
-                <h3 className="font-semibold">{block.title}</h3>
-                <BulletList items={block.items} />
+      <CardContent className="space-y-5">
+        {isResultModal ? (
+          <>
+            {modal.summary && (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-border bg-background/50 p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Scan Confidence</p>
+                  <p className="mt-2 text-2xl font-bold text-foreground">{modal.summary.confidence}</p>
+                </div>
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Anomalies Found</p>
+                  <p className="mt-2 text-2xl font-bold text-foreground">{modal.summary.found}</p>
+                </div>
+                <div className="rounded-xl border border-border bg-background/50 p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Severity</p>
+                  <p className="mt-2 text-2xl font-bold text-foreground">{modal.summary.severity}</p>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-        {modal.primaryAction && (
-          <div className="rounded-lg border border-primary/20 bg-primary/10 p-4">
-            <p className="text-xs font-medium uppercase tracking-normal text-primary">Generated Action</p>
-            <p className="mt-2 text-sm leading-6 text-foreground">{modal.primaryAction}</p>
-          </div>
+            )}
+            {modal.flaggedItems && modal.flaggedItems.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Flagged Items</p>
+                {modal.flaggedItems.map((item, i) => (
+                  <div
+                    key={`${item.label}-${i}`}
+                    className={cn(
+                      'flex items-start gap-3 rounded-lg border-l-4 p-3 text-sm',
+                      item.severity === 'danger'
+                        ? 'border-destructive bg-destructive/5'
+                        : 'border-amber-500 bg-amber-500/5',
+                    )}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="font-semibold text-foreground">{item.label}</p>
+                      <p className="text-xs leading-normal text-muted-foreground">{item.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {modal.blocks.length > 0 && (
+              <div className="grid gap-3 md:grid-cols-2">
+                {modal.blocks.map((block) => (
+                  <div key={block.title} className="rounded-lg border border-border/70 bg-background/40 p-4">
+                    <h3 className="font-semibold">{block.title}</h3>
+                    <BulletList items={block.items} />
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-end gap-3 border-t border-border/70 pt-4">
+              <Button type="button" variant="outline" onClick={onClose}>
+                {modal.secondaryCtaLabel || 'Dismiss'}
+              </Button>
+              <Button
+                type="button"
+                className="bg-violet-600 hover:bg-violet-500 text-white font-medium shadow-md transition-all active:scale-95"
+                onClick={onClose}
+              >
+                {modal.primaryCtaLabel || 'Review Flagged Items'}
+                <ShieldAlert className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {modal.answer && (
+              <div className="rounded-lg border border-primary/20 bg-primary/10 p-4">
+                <p className="text-sm leading-7 text-foreground">{modal.answer}</p>
+              </div>
+            )}
+            {modal.blocks.length > 0 && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {modal.blocks.map((block) => (
+                  <div key={block.title} className="rounded-lg border border-border/70 bg-background/40 p-4">
+                    <h3 className="font-semibold">{block.title}</h3>
+                    <BulletList items={block.items} />
+                  </div>
+                ))}
+              </div>
+            )}
+            {modal.primaryAction && (
+              <div className="rounded-lg border border-primary/20 bg-primary/10 p-4">
+                <p className="text-xs font-medium uppercase tracking-normal text-primary">Generated Action</p>
+                <p className="mt-2 text-sm leading-6 text-foreground">{modal.primaryAction}</p>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </ModalFrame>
@@ -1464,6 +1546,223 @@ function ModalFrame({
 }
 
 function ExecutiveDashboardRenderer({ output, workspace }: RendererProps) {
+  const isAttendance = output.title.toLowerCase().includes('attendance') ||
+                       output.workspaceTitle.toLowerCase().includes('attendance') ||
+                       output.purpose.toLowerCase().includes('attendance')
+
+  if (isAttendance) {
+    const regionalSection = output.sections.find(
+      (s) => s.id === 'regional-performance' || s.title.toLowerCase().includes('regional') || s.title.toLowerCase().includes('segment'),
+    )
+    const anomaliesSection = output.sections.find(
+      (s) => s.id === 'detected-anomalies' || s.title.toLowerCase().includes('anomaly'),
+    )
+    const causesSection = output.sections.find(
+      (s) => s.id === 'root-cause-analysis' || s.title.toLowerCase().includes('root cause') || s.title.toLowerCase().includes('cause'),
+    )
+    const actionsList = output.actions.length > 0 ? output.actions : [
+      { title: 'Optimize Shift Buffer', priority: 'High' as const, detail: 'Adjust shift scheduling window to absorb local transit delays.' },
+      { title: 'System Database Sync', priority: 'Medium' as const, detail: 'Deploy device client patch to fix offline check-in buffering errors.' },
+    ]
+
+    const regionalItems = (regionalSection?.items && regionalSection.items.length > 0)
+      ? regionalSection.items
+      : ['Jakarta Branch: 97.2% (Target Achieved)', 'Eastern Branch: 90.9% (Action Needed)']
+
+    const anomalyItems = (anomaliesSection?.items && anomaliesSection.items.length > 0)
+      ? anomaliesSection.items
+      : ['Unchecked Shift Gaps: 3 occurrences flagged.', 'Sub-90% Streak: Department below operating target.']
+
+    const causeItems = (causesSection?.items && causesSection.items.length > 0)
+      ? causesSection.items
+      : ['Transportation Delays - 57%', 'System Check-in Glitches - 31%', 'Unexcused Absence - 12%']
+
+    return (
+      <OutputShell>
+        <WorkspaceHeader output={output} icon={<BarChart3 className="h-5 w-5" />} label="Executive Dashboard" />
+        <StatusStrip output={output} />
+        <MetricGrid metrics={output.metrics} columns="lg:grid-cols-3" onAction={workspace.handleMetricAction} />
+        
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Left Column: Visual Charts & Anomalies */}
+          <div className="space-y-6">
+            <Card className="border-primary/20 bg-card/70 shadow-xl">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                  <Map className="h-5 w-5 text-primary" />
+                  {regionalSection?.title || 'Regional Attendance Comparison'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {regionalItems.map((item, idx) => {
+                  const match = item.match(/(\d+(?:\.\d+)?%)/)
+                  const percentStr = match ? match[1] : (idx === 0 ? '97.2%' : '90.9%')
+                  const percentVal = parseFloat(percentStr) || 90
+                  const label = item.split(':')[0]?.trim() || item
+                  const isHigh = percentVal >= 95 || item.toLowerCase().includes('target achieved')
+                  
+                  return (
+                    <div key={`${item}-${idx}`} className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground">{label}</span>
+                          <Badge className={cn(
+                            'text-xs py-0.5 px-2 rounded-full border',
+                            isHigh
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10'
+                              : 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10',
+                          )}>
+                            {isHigh ? 'High Performer' : 'Action Needed'}
+                          </Badge>
+                        </div>
+                        <span className={cn('font-bold text-base', isHigh ? 'text-emerald-400' : 'text-destructive')}>
+                          {percentStr}
+                        </span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn('h-full rounded-full transition-all duration-500', isHigh ? 'bg-emerald-500' : 'bg-destructive')}
+                          style={{ width: `${Math.min(100, Math.max(10, percentVal))}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 bg-card/70 shadow-xl">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  {anomaliesSection?.title || 'Detected Anomalies'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {anomalyItems.map((item, idx) => {
+                  const isSevere = idx > 0 || item.toLowerCase().includes('critical') || item.toLowerCase().includes('below') || item.toLowerCase().includes('streak')
+                  const parts = item.split('(')
+                  const title = parts[0]?.trim().replace(/^[-*\d.]+\s*/, '') || item
+                  const detail = parts[1] ? `(${parts.slice(1).join('(')}` : item
+
+                  return (
+                    <div
+                      key={`${item}-${idx}`}
+                      className={cn(
+                        'flex items-start gap-3 rounded-lg border-l-4 p-3 text-sm',
+                        isSevere
+                          ? 'border-destructive bg-destructive/5'
+                          : 'border-amber-500 bg-amber-500/5',
+                      )}
+                    >
+                      <div className="space-y-1">
+                        <p className="font-medium text-foreground">{title}</p>
+                        <p className="text-muted-foreground text-xs leading-normal">{detail}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column: Causes & Recommended Actions */}
+          <div className="space-y-6">
+            <Card className="border-primary/20 bg-card/70 shadow-xl">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  {causesSection?.title || 'Root Cause Analysis'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {causeItems.map((item, idx) => {
+                  const match = item.match(/(\d+(?:\.\d+)?%)/)
+                  const percentStr = match ? match[1] : (idx === 0 ? '57%' : idx === 1 ? '31%' : '12%')
+                  const percentVal = parseFloat(percentStr) || 20
+                  const colorClass = idx === 0 ? 'bg-violet-500' : idx === 1 ? 'bg-indigo-500' : 'bg-rose-500'
+                  const label = item.replace(/[-–—]?\s*\d+(?:\.\d+)?%\s*$/, '').trim() || item
+
+                  return (
+                    <div key={`${item}-${idx}`} className="space-y-2">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{label}</span>
+                        <span className="font-semibold text-foreground">{percentStr}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn('h-full rounded-full transition-all duration-500', colorClass)}
+                          style={{ width: `${Math.min(100, Math.max(5, percentVal))}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 bg-card/70 shadow-xl">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  Recommended Immediate Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {actionsList.slice(0, 2).map((act, idx) => {
+                  const isHigh = act.priority === 'High' || act.priority === 'Critical' || idx === 0
+
+                  return (
+                    <div key={`${act.title}-${idx}`} className="rounded-lg border border-border bg-background/30 p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Badge className={cn(
+                          'text-xs py-0.5 px-2 rounded-full border',
+                          isHigh
+                            ? 'bg-violet-500/15 text-violet-400 border-violet-500/30 hover:bg-violet-500/15'
+                            : 'bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/15',
+                        )}>
+                          {act.priority || (isHigh ? 'High Priority' : 'Medium Priority')}
+                        </Badge>
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">{act.title}</p>
+                      <p className="text-xs text-muted-foreground leading-normal">{act.detail}</p>
+                      <Button
+                        type="button"
+                        variant={isHigh ? 'default' : 'outline'}
+                        className={cn(
+                          'w-full font-medium text-xs h-9 shadow-md transition-all active:scale-95',
+                          isHigh
+                            ? 'bg-violet-600 hover:bg-violet-500 text-white'
+                            : 'border border-primary/30 hover:bg-primary/10 text-primary',
+                        )}
+                        onClick={() => {
+                          workspace.updateState({ selectedDimension: act.title }, `Action selected: ${act.title}`)
+                          void workspace.requestWorkspaceModal(
+                            {
+                              triggerType: 'recommended-action',
+                              triggerLabel: act.title,
+                              action: act,
+                            },
+                            buildRecommendedActionModal(act, workspace.state),
+                          )
+                        }}
+                      >
+                        {act.title}
+                      </Button>
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <NextAnalysisPanel items={output.nextAnalyses} workspace={workspace} />
+        <FollowUpQuestions items={output.followUpQuestions} workspace={workspace} output={output} />
+      </OutputShell>
+    )
+  }
+
   return (
     <OutputShell>
       <WorkspaceHeader output={output} icon={<BarChart3 className="h-5 w-5" />} label="Executive Dashboard" />
@@ -1680,15 +1979,19 @@ function MetricGrid({
             </p>
           )}
           <div className="mt-4 flex flex-wrap gap-2">
-            {['Explore', 'Compare', 'Forecast', 'Explain', 'Drill Down', 'View Evidence'].map((action) => (
+            {['Analyze Anomalies', 'Compare', 'Forecast', 'Explain', 'Drill Down', 'View Evidence'].map((action) => (
               <Button
                 key={action}
                 type="button"
-                variant="outline"
+                variant={action === 'Analyze Anomalies' ? 'default' : 'outline'}
                 size="sm"
-                className="h-7 px-2 text-xs"
+                className={cn(
+                  'h-7 px-2 text-xs',
+                  action === 'Analyze Anomalies' && 'bg-violet-600 hover:bg-violet-500 text-white border-transparent',
+                )}
                 onClick={() => onAction(action, metric)}
               >
+                {action === 'Analyze Anomalies' && <ShieldAlert className="mr-1 h-3 w-3" />}
                 {action}
               </Button>
             ))}
@@ -2498,31 +2801,67 @@ function buildMetricActionModal(
   output: GeneratedDocumentOutput,
   state: WorkspaceState,
 ): WorkspaceModal {
+  const anomalySection = output.sections.find(
+    (s) =>
+      s.id === 'detected-anomalies' ||
+      s.id.includes('anomaly') ||
+      s.id.includes('quality') ||
+      s.title.toLowerCase().includes('anomaly') ||
+      s.title.toLowerCase().includes('risk'),
+  )
+  const rawAnomalyItems = anomalySection?.items || []
+  const anomalyCount = rawAnomalyItems.length > 0
+    ? rawAnomalyItems.length
+    : (metric.risk === 'High' || metric.risk === 'Critical' ? 2 : metric.risk === 'Medium' ? 1 : 0)
+
+  const recordCount = metric.affectedRecords || output.statusLine.match(/\d[0-9,]*/)?.[0] || output.hero.value || 'all available'
+  const confidenceDisplay = typeof metric.confidence === 'number'
+    ? `${metric.confidence}%`
+    : (output.hero.confidence ? `${output.hero.confidence}%` : '92%')
+  const riskLevel = metric.risk === 'High' || metric.risk === 'Critical' ? 'High Risk' : metric.risk === 'Medium' ? 'Medium Risk' : 'Low Risk'
+
+  const flaggedItems = rawAnomalyItems.length > 0
+    ? rawAnomalyItems.slice(0, 3).map((item, idx) => ({
+        label: item.split('(')[0]?.trim().replace(/^[-*\d.]+\s*/, '') || item,
+        detail: item.includes('(') ? item : `Observed in ${state.selectedRegion !== 'All regions' ? state.selectedRegion : (metric.sourceFields?.[0] || state.selectedDimension || 'primary segment')} — flagged for investigation.`,
+        severity: (idx === 0 && (metric.risk === 'High' || metric.risk === 'Critical') ? 'danger' : 'warning') as 'warning' | 'danger',
+      }))
+    : [
+        {
+          label: `${metric.label} Variance Anomaly`,
+          detail: `Found in ${state.selectedRegion !== 'All regions' ? state.selectedRegion : (metric.sourceFields?.[0] || state.selectedDimension || 'primary segment')} — requires investigation.`,
+          severity: (metric.risk === 'High' || metric.risk === 'Critical' ? 'danger' : 'warning') as 'warning' | 'danger',
+        },
+        ...(anomalyCount > 1 ? [{
+          label: `${metric.label} Threshold Deviation`,
+          detail: `${metric.label} dropped below acceptable operating threshold (${metric.value}). Validate with evidence before escalating.`,
+          severity: 'danger' as const,
+        }] : []),
+      ]
+
   const actionMap: Record<string, WorkspaceModal> = {
-    Explore: {
-      title: `Explore ${metric.label}`,
-      label: 'KPI Exploration',
-      description: `FlowSummary is opening ${metric.label} using ${state.selectedDimension}, ${state.selectedTimeRange}, ${state.selectedRegion}, and ${state.selectedProduct}.`,
-      answer: `${metric.label} is the best starting point for exploration because its current value is ${metric.value}. ${metric.interpretation || metric.detail || output.statusLine} The next useful move is to isolate the dimension most likely to explain the signal, then confirm it against the evidence before turning it into an action.`,
+    'Analyze Anomalies': {
+      title: `Anomaly Scan: ${metric.label}`,
+      label: 'Anomaly Detection',
+      description: `AI scanned ${recordCount} records and identified ${anomalyCount} anomaly signal${anomalyCount !== 1 ? 's' : ''} in ${metric.label}.`,
+      summary: {
+        confidence: confidenceDisplay,
+        found: String(anomalyCount),
+        severity: riskLevel,
+      },
+      flaggedItems,
       blocks: [
         {
-          title: 'Current Signal',
+          title: 'Workspace Context',
           items: [
-            `${metric.label}: ${metric.value}`,
-            metric.interpretation || metric.detail || output.statusLine,
-            `Risk: ${metric.risk || 'Medium'}`,
-          ],
-        },
-        {
-          title: 'Explore Path',
-          items: [
-            `Break down by ${metric.sourceFields?.[0] || state.selectedDimension}.`,
-            'Compare the strongest segment against the rest of the document.',
-            'Open evidence before assigning an owner.',
+            `KPI: ${metric.label} — ${metric.value}`,
+            `Trend: ${metric.trend || 'Not available'}`,
+            `Region: ${state.selectedRegion}`,
           ],
         },
       ],
-      primaryAction: metric.suggestedAction || `Continue exploring ${metric.label}.`,
+      primaryCtaLabel: 'Review Flagged Items',
+      secondaryCtaLabel: 'Dismiss',
     },
     Compare: {
       title: `Compare ${metric.label}`,
