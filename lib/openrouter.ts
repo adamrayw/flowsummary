@@ -128,13 +128,21 @@ function fallbackTitle(sourceText: string) {
   return firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine
 }
 
-function getInstructions(templateId: string | null, customInstructions: string) {
+export function formatLanguageInstruction(lang?: string) {
+  if (lang === 'en') {
+    return 'Language requirement: You MUST write your entire response strictly in English. All titles, summaries, explanations, findings, and recommendations must be in English.'
+  }
+  return 'Language requirement: Seluruh respons, judul, narasi, penjelasan, temuan, dan rekomendasi WAJIB ditulis secara konsisten dalam Bahasa Indonesia yang formal dan profesional.'
+}
+
+function getInstructions(templateId: string | null, customInstructions: string, language?: string) {
   const templateInstructions = templateId ? TEMPLATE_PROMPTS[templateId] : undefined
   const effectiveInstructions = customInstructions.trim() || templateInstructions || 'Create a professional summary report.'
 
   return [
     'You are FlowSummary, an AI report-writing assistant.',
     'Transform raw user information into a concise professional report.',
+    formatLanguageInstruction(language),
     'Return ONLY valid JSON. Do not wrap it in markdown.',
     'JSON shape:',
     '{"title":"short report title","summary":"one concise paragraph","keyInsights":["3-5 insights"],"recommendations":["3-5 recommendations"],"conclusion":"short closing paragraph"}',
@@ -250,11 +258,12 @@ export async function generateSummaryWithOpenRouter(params: {
   sourceText: string
   instructions: string
   templateId: string | null
+  language?: string
 }) {
   const sourceText = clampText(params.sourceText, MAX_SOURCE_CHARS)
 
   const response = await callOpenRouter({
-    systemPrompt: getInstructions(params.templateId, params.instructions),
+    systemPrompt: getInstructions(params.templateId, params.instructions, params.language),
     userPrompt: sourceText,
     maxTokens: 1200,
     temperature: 0.2,

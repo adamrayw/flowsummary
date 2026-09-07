@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
+    const language = (formData.get('language') as string | null) || 'id'
 
     if (!file) {
       return NextResponse.json({ message: 'No file provided.' }, { status: 400 })
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
       filename: document.filename,
       sourceText,
       profile,
+      language,
     })
 
     await prisma.document.update({

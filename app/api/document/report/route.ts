@@ -19,11 +19,13 @@ export async function POST(request: Request) {
   const payload = (await request.json().catch(() => null)) as {
     documentId?: unknown
     recommendationId?: unknown
+    language?: unknown
   } | null
 
   const documentId = typeof payload?.documentId === 'string' ? payload.documentId : ''
   const recommendationId =
     typeof payload?.recommendationId === 'string' ? payload.recommendationId : ''
+  const language = typeof payload?.language === 'string' ? payload.language : 'id'
 
   if (!documentId || !recommendationId) {
     return NextResponse.json(
@@ -84,6 +86,7 @@ export async function POST(request: Request) {
       profile,
       classification,
       recommendation: selectedRecommendation,
+      language,
     })
 
     const saved = await prisma.generatedReport.create({

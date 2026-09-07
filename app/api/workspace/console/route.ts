@@ -1,6 +1,4 @@
-import { NextResponse } from 'next/server'
-
-import { generateJsonWithOpenRouter, hasOpenRouterConfig } from '@/lib/openrouter'
+import { generateJsonWithOpenRouter, hasOpenRouterConfig, formatLanguageInstruction } from '@/lib/openrouter'
 import { getAuthorizedRaytechUser } from '@/lib/raytech-account'
 
 type AnalystConsoleMessage = {
@@ -95,9 +93,10 @@ function normalizeMessage(value: unknown): AnalystConsoleMessage | null {
   }
 }
 
-function getSystemPrompt() {
+function getSystemPrompt(language?: string) {
   return [
     'You are FlowSummary AI Analyst Console, a contextual enterprise investigation assistant.',
+    formatLanguageInstruction(language),
     'You are not ChatGPT. Do not start with hello, greetings, or generic help offers.',
     'Immediately answer using the current workspace state, document context, previous reasoning, current evidence, and conversation memory.',
     'The workspace is the primary product. The console continues the investigation and should not reset context.',
@@ -139,9 +138,11 @@ export async function POST(request: Request) {
     workspaceState?: unknown
     output?: unknown
     messages?: unknown
+    language?: unknown
   }
   const prompt = cleanString(payload.prompt)
   const command = cleanString(payload.command)
+  const language = cleanString(payload.language, 'id')
 
   if (!prompt) {
     return NextResponse.json({ message: 'Prompt is required.' }, { status: 400 })
@@ -157,7 +158,7 @@ export async function POST(request: Request) {
 
   try {
     const response = await generateJsonWithOpenRouter({
-      systemPrompt: getSystemPrompt(),
+      systemPrompt: getSystemPrompt(language),
       userPrompt: [
         command ? `Slash command: ${command}` : 'Slash command: none',
         `User prompt: ${prompt}`,

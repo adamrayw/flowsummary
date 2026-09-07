@@ -48,6 +48,7 @@ import type {
   OutputSlide,
 } from '@/lib/document-intelligence-types'
 import { cn } from '@/lib/utils'
+import { useLanguage } from '@/components/language-context'
 
 interface GeneratedOutputSectionProps {
   output: GeneratedDocumentOutput
@@ -154,6 +155,7 @@ type PresentationModel = {
   style: PresentationStyle
   sourceWorkspace: string
   generatedFrom: string
+  language?: 'id' | 'en'
   slides: PresentationSlideModel[]
 }
 
@@ -178,6 +180,7 @@ type RendererProps = GeneratedOutputSectionProps & {
 }
 
 export default function GeneratedOutputSection({ output }: GeneratedOutputSectionProps) {
+  const { language } = useLanguage()
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState>(() => ({
     selectedKpi: output.metrics[0]?.label || output.hero.label,
     selectedDimension: output.sections[0]?.title || 'Overview',
@@ -268,6 +271,7 @@ export default function GeneratedOutputSection({ output }: GeneratedOutputSectio
           ...request,
           workspaceState: effectiveState,
           output,
+          language,
         }),
       })
       const payload = (await response.json().catch(() => null)) as { modal?: WorkspaceModal; message?: string } | null
@@ -327,11 +331,11 @@ export default function GeneratedOutputSection({ output }: GeneratedOutputSectio
     const nextState = { ...workspaceState, ...statePatch }
     const evidence = sectionToEvidence(section, output)
 
-    updateState(statePatch, `Evidence opened for ${section.title}`)
+    updateState(statePatch, `Evidence inspected for ${section.title}`)
     void requestWorkspaceModal(
       {
         triggerType: 'evidence',
-        triggerLabel: `View Evidence: ${section.title}`,
+        triggerLabel: `Evidence: ${section.title}`,
         evidence,
       },
       buildEvidenceActionModal(evidence, nextState),
@@ -352,7 +356,7 @@ export default function GeneratedOutputSection({ output }: GeneratedOutputSectio
   }
 
   const openPresentationWorkspace = () => {
-    const model = buildPresentationModelFromWorkspace(output, workspaceState, 'Executive Board', 'Corporate')
+    const model = buildPresentationModelFromWorkspace(output, workspaceState, 'Executive Board', 'Corporate', language)
     setPresentationModel(model)
     setSelectedPresentationSlideId(model.slides[0]?.id || null)
     updateState({}, 'Presentation Workspace opened from current investigation')
@@ -559,6 +563,7 @@ function SlideCanvas({
   output,
   workspaceState,
   style,
+  language = 'id',
 }: {
   slide: PresentationSlideModel
   slideIndex: number
@@ -566,8 +571,10 @@ function SlideCanvas({
   output: GeneratedDocumentOutput
   workspaceState: WorkspaceState
   style: PresentationStyle
+  language?: 'id' | 'en'
 }) {
   const isLight = style === 'Light'
+  const isEn = language === 'en'
   const confidence = typeof slide.confidence === 'number' ? `${slide.confidence}%` : '95%'
 
   const parseBullet = (bullet: string) => {
@@ -591,7 +598,9 @@ function SlideCanvas({
                   'border-l-violet-500 bg-violet-500/5',
                   'border-l-indigo-500 bg-indigo-500/5',
                 ]
-                const badgeText = idx === 0 ? 'Status Operasional' : idx === 1 ? 'Integritas Data' : 'Mandat Keputusan'
+                const badgeText = isEn
+                  ? (idx === 0 ? 'Operational Status' : idx === 1 ? 'Data Integrity' : 'Decision Mandate')
+                  : (idx === 0 ? 'Status Operasional' : idx === 1 ? 'Integritas Data' : 'Mandat Keputusan')
                 return (
                   <div
                     key={`${bullet}-${idx}`}
@@ -603,7 +612,7 @@ function SlideCanvas({
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{badgeText}</span>
                     </div>
-                    <p className="text-sm font-semibold text-foreground">{lead || `Poin Strategis ${idx + 1}`}</p>
+                    <p className="text-sm font-semibold text-foreground">{lead || (isEn ? `Strategic Point ${idx + 1}` : `Poin Strategis ${idx + 1}`)}</p>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{desc}</p>
                   </div>
                 )
@@ -648,7 +657,7 @@ function SlideCanvas({
               </div>
 
               <div className="rounded-lg border border-border/70 bg-background/50 p-3 text-xs text-muted-foreground leading-normal">
-                <span className="font-semibold text-foreground">Executive Directive:</span> Disetujui untuk presentasi manajemen tanpa memerlukan investigasi darurat.
+                <span className="font-semibold text-foreground">Executive Directive:</span> {isEn ? 'Approved for executive review and operational briefing.' : 'Disetujui untuk presentasi manajemen tanpa memerlukan investigasi darurat.'}
               </div>
             </div>
           </div>
@@ -661,7 +670,7 @@ function SlideCanvas({
               <div>
                 <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-3">
                   <Target className="h-4 w-4" />
-                  <span>Ruang Lingkup & Latar Belakang Bisnis</span>
+                  <span>{isEn ? 'Scope & Business Background' : 'Ruang Lingkup & Latar Belakang Bisnis'}</span>
                 </div>
                 {slide.bullets.slice(0, 2).map((b, i) => {
                   const { lead, desc } = parseBullet(b)
@@ -674,8 +683,8 @@ function SlideCanvas({
                 })}
               </div>
               <div className="flex flex-wrap gap-2 pt-3 border-t border-border/50">
-                <Badge variant="outline" className="text-xs">Dimensi: {workspaceState.selectedDimension}</Badge>
-                <Badge variant="outline" className="text-xs">Segmen: {workspaceState.selectedRegion}</Badge>
+                <Badge variant="outline" className="text-xs">{isEn ? 'Dimension' : 'Dimensi'}: {workspaceState.selectedDimension}</Badge>
+                <Badge variant="outline" className="text-xs">{isEn ? 'Segment' : 'Segmen'}: {workspaceState.selectedRegion}</Badge>
               </div>
             </div>
 
@@ -683,7 +692,7 @@ function SlideCanvas({
               <div>
                 <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-3">
                   <ListChecks className="h-4 w-4" />
-                  <span>Metodologi & Parameter Toleransi</span>
+                  <span>{isEn ? 'Methodology & Tolerance Thresholds' : 'Metodologi & Parameter Toleransi'}</span>
                 </div>
                 {(slide.bullets[2] ? [slide.bullets[2]] : slide.bullets.slice(1, 2)).map((b, i) => {
                   const { lead, desc } = parseBullet(b)
@@ -695,12 +704,12 @@ function SlideCanvas({
                   )
                 })}
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs leading-relaxed text-muted-foreground mt-3">
-                  <strong className="text-foreground">Benchmark Acuan:</strong> Deviasi di bawah ambang batas 5% diklasifikasikan sebagai variasi normal dan tidak memicu eskalasi.
+                  <strong className="text-foreground">{isEn ? 'Reference Benchmark: ' : 'Benchmark Acuan: '}</strong>{isEn ? 'Deviations below the 5% threshold are classified as normal variance and do not require escalation.' : 'Deviasi di bawah ambang batas 5% diklasifikasikan sebagai variasi normal dan tidak memicu eskalasi.'}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 pt-3 border-t border-border/50">
                 <Badge variant="outline" className="text-xs">Model: {confidence} Verified</Badge>
-                <Badge variant="outline" className="text-xs">Waktu: {workspaceState.selectedTimeRange}</Badge>
+                <Badge variant="outline" className="text-xs">{isEn ? 'Period' : 'Waktu'}: {workspaceState.selectedTimeRange}</Badge>
               </div>
             </div>
           </div>
@@ -711,7 +720,9 @@ function SlideCanvas({
           <div className="grid flex-1 gap-4 md:grid-cols-3 items-stretch">
             {slide.bullets.slice(0, 3).map((bullet, idx) => {
               const { lead, desc } = parseBullet(bullet)
-              const badges = ['Temuan Utama', 'Pola Sebaran', 'Validasi Audit']
+              const badges = isEn
+                ? ['Primary Finding', 'Distribution Pattern', 'Audit Validation']
+                : ['Temuan Utama', 'Pola Sebaran', 'Validasi Audit']
               const icons = [
                 <BarChart3 key="1" className="h-4 w-4" />,
                 <TrendingUp key="2" className="h-4 w-4" />,
@@ -737,7 +748,7 @@ function SlideCanvas({
                   </div>
                   <div className="flex items-center gap-1.5 pt-2 text-[11px] font-medium text-primary border-t border-border/50">
                     {icons[idx]}
-                    <span>{slide.highlights[idx] || 'Terverifikasi'}</span>
+                    <span>{slide.highlights[idx] || (isEn ? 'Verified' : 'Terverifikasi')}</span>
                   </div>
                 </div>
               )
@@ -749,11 +760,18 @@ function SlideCanvas({
         return (
           <div className="space-y-4 flex-1 flex flex-col justify-center">
             <div className="grid gap-3 md:grid-cols-3">
-              {[
-                { label: 'Hambatan Transit Eksternal', pct: '57%', barColor: 'bg-violet-500' },
-                { label: 'Latensi Sinkronisasi Sistem', pct: '31%', barColor: 'bg-indigo-500' },
-                { label: 'Deviasi Personal / Shift Gap', pct: '12%', barColor: 'bg-rose-500' },
-              ].map((driver) => (
+              {(isEn
+                ? [
+                    { label: 'External Transit & Buffer', pct: '57%', barColor: 'bg-violet-500' },
+                    { label: 'System Sync Latency', pct: '31%', barColor: 'bg-indigo-500' },
+                    { label: 'Personal Deviation / Shift Gap', pct: '12%', barColor: 'bg-rose-500' },
+                  ]
+                : [
+                    { label: 'Hambatan Transit Eksternal', pct: '57%', barColor: 'bg-violet-500' },
+                    { label: 'Latensi Sinkronisasi Sistem', pct: '31%', barColor: 'bg-indigo-500' },
+                    { label: 'Deviasi Personal / Shift Gap', pct: '12%', barColor: 'bg-rose-500' },
+                  ]
+              ).map((driver) => (
                 <div key={driver.label} className="rounded-lg border border-border/70 bg-card/50 p-3 space-y-1.5">
                   <div className="flex justify-between text-xs">
                     <span className="font-semibold text-foreground truncate">{driver.label}</span>
@@ -776,7 +794,7 @@ function SlideCanvas({
                       <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{desc}</p>
                     </div>
                     <div className="pt-2 border-t border-border/40 text-[11px] text-muted-foreground">
-                      Kontribusi: {idx === 0 ? 'Dominan' : idx === 1 ? 'Moderat' : 'Minor'}
+                      {isEn ? 'Contribution' : 'Kontribusi'}: {idx === 0 ? (isEn ? 'Dominant' : 'Dominan') : idx === 1 ? (isEn ? 'Moderate' : 'Moderat') : (isEn ? 'Minor' : 'Minor')}
                     </div>
                   </div>
                 )
@@ -790,8 +808,12 @@ function SlideCanvas({
           <div className="grid flex-1 gap-4 md:grid-cols-3 items-stretch">
             {slide.bullets.slice(0, 3).map((bullet, idx) => {
               const { lead, desc } = parseBullet(bullet)
-              const impactLabels = ['Efisiensi Jam Kerja', 'Kepatuhan & Tata Kelola', 'Alokasi Sumber Daya']
-              const highlights = ['8-12% Penghematan Jam', 'Zero Legal Exposure', 'Optimal Budget Allocation']
+              const impactLabels = isEn
+                ? ['Working Hour Efficiency', 'Compliance & Governance', 'Resource Allocation']
+                : ['Efisiensi Jam Kerja', 'Kepatuhan & Tata Kelola', 'Alokasi Sumber Daya']
+              const highlights = isEn
+                ? ['8-12% Recovered Hours', 'Zero Compliance Penalty', 'Optimal Resource Allocation']
+                : ['8-12% Penghematan Jam', 'Zero Legal Exposure', 'Optimal Budget Allocation']
 
               return (
                 <div key={idx} className="rounded-xl border border-border/80 bg-card/60 p-4 space-y-3 flex flex-col justify-between">
@@ -816,7 +838,9 @@ function SlideCanvas({
           <div className="grid flex-1 gap-4 md:grid-cols-3 items-stretch">
             {slide.bullets.slice(0, 3).map((bullet, idx) => {
               const { lead, desc } = parseBullet(bullet)
-              const pillars = ['Pilar 1: Proses & SOP', 'Pilar 2: Teknologi & Sistem', 'Pilar 3: Monitoring & Pengawasan']
+              const pillars = isEn
+                ? ['Pillar 1: Process & SOP', 'Pillar 2: Systems & Technology', 'Pillar 3: Daily Monitoring']
+                : ['Pilar 1: Proses & SOP', 'Pilar 2: Teknologi & Sistem', 'Pilar 3: Monitoring & Pengawasan']
               const priorities = ['High Priority', 'Medium Priority', 'Ongoing']
               const prioColors = [
                 'border-violet-500/30 text-violet-400 bg-violet-500/10',
@@ -838,7 +862,7 @@ function SlideCanvas({
                   </div>
                   <div className="pt-2 border-t border-border/50 text-[11px] text-muted-foreground flex items-center gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                    <span>Langkah strategis siap eksekusi</span>
+                    <span>{isEn ? 'Strategic step ready for execution' : 'Langkah strategis siap eksekusi'}</span>
                   </div>
                 </div>
               )
@@ -851,8 +875,12 @@ function SlideCanvas({
           <div className="space-y-3 flex-1 flex flex-col justify-center">
             {slide.bullets.slice(0, 3).map((bullet, idx) => {
               const { lead, desc } = parseBullet(bullet)
-              const phases = ['Fase 1 (Hari 01–14)', 'Fase 2 (Hari 15–30)', 'Fase 3 (Hari 31–60)']
-              const timelines = ['Stabilisasi Cepat', 'Audit & Validasi Lapangan', 'Pembakuan Regulasi Tetap']
+              const phases = isEn
+                ? ['Phase 1 (Days 01–14)', 'Phase 2 (Days 15–30)', 'Phase 3 (Days 31–60)']
+                : ['Fase 1 (Hari 01–14)', 'Fase 2 (Hari 15–30)', 'Fase 3 (Hari 31–60)']
+              const timelines = isEn
+                ? ['Rapid Stabilization', 'Field Audit & Validation', 'Policy Institutionalization']
+                : ['Stabilisasi Cepat', 'Audit & Validasi Lapangan', 'Pembakuan Regulasi Tetap']
 
               return (
                 <div key={idx} className="flex flex-col md:flex-row items-start md:items-center gap-3 rounded-xl border border-border/80 bg-card/60 p-3.5">
@@ -878,8 +906,8 @@ function SlideCanvas({
           <div className="grid flex-1 gap-4 md:grid-cols-3 items-stretch">
             {slide.bullets.slice(0, 3).map((bullet, idx) => {
               const { lead, desc } = parseBullet(bullet)
-              const metricsBefore = ['94.2% Baseline', '3.5 Jam / Pekan', 'Potensi Deviasi']
-              const metricsAfter = ['99.0% Target Capaian', '0.8 Jam / Pekan (-75%)', 'Zero Critical Incident']
+              const metricsBefore = ['94.2% Baseline', '3.5 Hours / Wk', 'Potential Variance']
+              const metricsAfter = ['99.0% Target', '0.8 Hours / Wk (-75%)', 'Zero Critical Incident']
 
               return (
                 <div key={idx} className="rounded-xl border border-border/80 bg-card/60 p-4 space-y-3 flex flex-col justify-between">
@@ -892,11 +920,11 @@ function SlideCanvas({
                   </div>
                   <div className="space-y-1.5 pt-3 border-t border-border/50 text-xs">
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Sebelum:</span>
+                      <span>{isEn ? 'Before:' : 'Sebelum:'}</span>
                       <span>{metricsBefore[idx]}</span>
                     </div>
                     <div className="flex justify-between font-bold text-emerald-400">
-                      <span>Target:</span>
+                      <span>{isEn ? 'Target:' : 'Target:'}</span>
                       <span>{metricsAfter[idx]}</span>
                     </div>
                   </div>
@@ -912,15 +940,15 @@ function SlideCanvas({
             <div className="grid gap-3 md:grid-cols-3">
               <div className="rounded-lg border border-primary/20 bg-primary/10 p-3 text-center">
                 <span className="text-2xl font-bold text-foreground">{slide.highlights[0] || '1,200 Rows'}</span>
-                <p className="text-xs text-muted-foreground">Dataset Terverifikasi</p>
+                <p className="text-xs text-muted-foreground">{isEn ? 'Verified Dataset' : 'Dataset Terverifikasi'}</p>
               </div>
               <div className="rounded-lg border border-primary/20 bg-primary/10 p-3 text-center">
                 <span className="text-2xl font-bold text-foreground">{slide.highlights[1] || '5 Dimensions'}</span>
-                <p className="text-xs text-muted-foreground">Cakupan Segmentasi</p>
+                <p className="text-xs text-muted-foreground">{isEn ? 'Segmentation Scope' : 'Cakupan Segmentasi'}</p>
               </div>
               <div className="rounded-lg border border-primary/20 bg-primary/10 p-3 text-center">
                 <span className="text-2xl font-bold text-emerald-400">100% Valid</span>
-                <p className="text-xs text-muted-foreground">Status Audit Trail</p>
+                <p className="text-xs text-muted-foreground">{isEn ? 'Audit Trail Status' : 'Status Audit Trail'}</p>
               </div>
             </div>
 
@@ -1024,13 +1052,14 @@ function PresentationWorkspace({
 }) {
   const [audience, setAudience] = useState<PresentationAudience>(model.audience)
   const [style, setStyle] = useState<PresentationStyle>(model.style)
+  const [deckLang, setDeckLang] = useState<'id' | 'en'>(model.language || 'id')
   const [instruction, setInstruction] = useState('')
   const [isExporting, setIsExporting] = useState(false)
   const [showPresenterNotes, setShowPresenterNotes] = useState(false)
   const selectedSlide = model.slides.find((slide) => slide.id === selectedSlideId) || model.slides[0]
 
-  const updateAudienceStyle = (nextAudience = audience, nextStyle = style) => {
-    const nextModel = buildPresentationModelFromWorkspace(output, workspaceState, nextAudience, nextStyle)
+  const updateAudienceStyle = (nextAudience = audience, nextStyle = style, nextLang = deckLang) => {
+    const nextModel = buildPresentationModelFromWorkspace(output, workspaceState, nextAudience, nextStyle, nextLang)
     onUpdateModel(nextModel)
     onSelectSlide(nextModel.slides[0]?.id || '')
   }
@@ -1054,7 +1083,7 @@ function PresentationWorkspace({
       const response = await fetch('/api/workspace/presentation/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ presentation: model }),
+        body: JSON.stringify({ presentation: { ...model, language: deckLang } }),
       })
 
       if (!response.ok) {
@@ -1081,7 +1110,7 @@ function PresentationWorkspace({
       const response = await fetch('/api/workspace/presentation/export/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ presentation: model }),
+        body: JSON.stringify({ presentation: { ...model, language: deckLang } }),
       })
 
       if (!response.ok) {
@@ -1118,11 +1147,23 @@ function PresentationWorkspace({
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <select
+              value={deckLang}
+              onChange={(event) => {
+                const nextLang = event.target.value as 'id' | 'en'
+                setDeckLang(nextLang)
+                updateAudienceStyle(audience, style, nextLang)
+              }}
+              className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium"
+            >
+              <option value="id">🇮🇩 ID</option>
+              <option value="en">🇬🇧 EN</option>
+            </select>
+            <select
               value={audience}
               onChange={(event) => {
                 const nextAudience = event.target.value as PresentationAudience
                 setAudience(nextAudience)
-                updateAudienceStyle(nextAudience, style)
+                updateAudienceStyle(nextAudience, style, deckLang)
               }}
               className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium"
             >
@@ -1135,7 +1176,7 @@ function PresentationWorkspace({
               onChange={(event) => {
                 const nextStyle = event.target.value as PresentationStyle
                 setStyle(nextStyle)
-                updateAudienceStyle(audience, nextStyle)
+                updateAudienceStyle(audience, nextStyle, deckLang)
               }}
               className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium"
             >
@@ -1208,6 +1249,7 @@ function PresentationWorkspace({
                   output={output}
                   workspaceState={workspaceState}
                   style={style}
+                  language={deckLang}
                 />
 
                 {/* Presenter Drawer (Speaker Notes & Guidance) */}
@@ -1363,6 +1405,7 @@ function AnalystConsole({
   onWidthChange: (width: number) => void
   onClose: () => void
 }) {
+  const { language } = useLanguage()
   const [messages, setMessages] = useState<AnalystMessage[]>(() => [
     buildInitialAnalystMessage(output, workspace.state),
   ])
@@ -1410,6 +1453,7 @@ function AnalystConsole({
           workspaceState: workspace.state,
           output,
           messages: nextMessages.slice(-10),
+          language,
         }),
       })
       const payload = (await response.json().catch(() => null)) as {

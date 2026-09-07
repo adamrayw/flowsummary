@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { AuthSessionProvider } from '@/components/auth-session-provider'
+import { LanguageProvider } from '@/components/language-context'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -31,7 +32,6 @@ export const metadata: Metadata = {
     ],
     apple: '/apple-icon.png',
   },
-  colorScheme: 'dark',
 }
 
 export default function RootLayout({
@@ -45,7 +45,9 @@ export default function RootLayout({
         suppressHydrationWarning
         className="font-sans antialiased bg-background text-foreground"
       >
-        <AuthSessionProvider>{children}</AuthSessionProvider>
+        <AuthSessionProvider>
+          <LanguageProvider>{children}</LanguageProvider>
+        </AuthSessionProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

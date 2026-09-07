@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { generateJsonWithOpenRouter, hasOpenRouterConfig } from '@/lib/openrouter'
+import { generateJsonWithOpenRouter, hasOpenRouterConfig, formatLanguageInstruction } from '@/lib/openrouter'
 import { getAuthorizedRaytechUser } from '@/lib/raytech-account'
 
 type WorkspaceModalPayload = {
@@ -170,9 +170,10 @@ function buildFocusedContext(payload: {
   }
 }
 
-function getSystemPrompt() {
+function getSystemPrompt(language?: string) {
   return [
     'You are FlowSummary, an enterprise AI analyst embedded inside a living analytics workspace.',
+    formatLanguageInstruction(language),
     'The user clicked one specific workspace button. Answer that exact click with a useful analyst response.',
     'Do not write generic SaaS marketing copy. Do not explain that you are an AI model.',
     'Do not enumerate every KPI, every action, every section, or every recommendation.',
@@ -211,24 +212,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Invalid workspace action payload.' }, { status: 400 })
   }
 
-  const payload = body as {
-    triggerType?: unknown
-    triggerLabel?: unknown
-    workspaceState?: unknown
-    output?: unknown
-    metric?: unknown
-    action?: unknown
-    nextAnalysis?: unknown
-    question?: unknown
-    evidence?: unknown
-  }
-
+  const payload = body as Record<string, unknown>
+  const language = cleanString(payload.language, 'id')
   const triggerType = cleanString(payload.triggerType, 'workspace-action')
   const triggerLabel = cleanString(payload.triggerLabel, 'Workspace action')
 
   try {
     const response = await generateJsonWithOpenRouter({
-      systemPrompt: getSystemPrompt(),
+      systemPrompt: getSystemPrompt(language),
       userPrompt: [
         `Clicked action type: ${triggerType}`,
         `Clicked action label: ${triggerLabel}`,

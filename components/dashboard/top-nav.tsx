@@ -4,9 +4,10 @@ import React, { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { FlowSummaryLogo } from '@/components/brand/flowsummary-logo'
-import { Bell, ChevronDown, LogOut, Settings, User, Menu } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Settings, User, Menu, Globe } from 'lucide-react'
 import { buildAuthLogoutUrl } from '@/lib/raytech-account'
 import { useAuthSession } from '@/hooks/use-auth-session'
+import { useLanguage } from '@/components/language-context'
 
 interface TopNavProps {
   onMenuClick?: () => void
@@ -14,6 +15,7 @@ interface TopNavProps {
 
 export default function TopNav({ onMenuClick }: TopNavProps) {
   const [showMenu, setShowMenu] = useState(false)
+  const { language, setLanguage } = useLanguage()
   const { data: session } = useAuthSession()
   const userName =
     session?.user?.name?.trim() ||
@@ -49,7 +51,37 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
+          {/* Language Switcher */}
+          <div className="flex items-center rounded-lg border border-border bg-background/60 p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setLanguage('id')}
+              className={`flex items-center gap-1 rounded-md px-2 py-1 font-medium transition ${
+                language === 'id'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Bahasa Indonesia"
+            >
+              <span className="text-xs">🇮🇩</span>
+              <span className="hidden sm:inline text-[11px] font-bold">ID</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('en')}
+              className={`flex items-center gap-1 rounded-md px-2 py-1 font-medium transition ${
+                language === 'en'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="English"
+            >
+              <span className="text-xs">🇬🇧</span>
+              <span className="hidden sm:inline text-[11px] font-bold">EN</span>
+            </button>
+          </div>
+
           {/* Notifications */}
           <button className="relative p-2 hover:bg-border rounded-lg transition-colors">
             <Bell className="w-5 h-5 text-muted-foreground" />

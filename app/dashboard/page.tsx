@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import type { SummaryListItem } from '@/lib/summary-types'
 import type { GeneratedDocumentOutput } from '@/lib/document-intelligence-types'
+import { useLanguage } from '@/components/language-context'
 
 type DashboardState = 'UPLOAD' | 'ANALYZING' | 'INSIGHTS' | 'GENERATING' | 'REPORT'
 
@@ -65,6 +66,7 @@ type DocumentDetailResponse = {
 }
 
 export default function DashboardPage() {
+  const { language } = useLanguage()
   const [currentState, setCurrentState] = useState<DashboardState>('UPLOAD')
   const [history, setHistory] = useState<SummaryListItem[]>([])
   const [isHistoryLoading, setIsHistoryLoading] = useState(true)
@@ -100,34 +102,33 @@ export default function DashboardPage() {
         })
       : null
 
-  const loadHistory = async () => {
-    setIsHistoryLoading(true)
-
-    try {
-      const response = await fetch('/api/document/history', { cache: 'no-store' })
-      const payload = (await response.json().catch(() => null)) as
-        | HistoryResponse
-        | { message?: string }
-        | null
-
-      if (!response.ok || !payload || !('summaries' in payload)) {
-        throw new Error(getPayloadMessage(payload) || 'Failed to load history.')
-      }
-
-      setHistory(payload.summaries)
-    } catch (historyError) {
-      setError(
-        historyError instanceof Error
-          ? historyError.message
-          : 'Failed to load history.',
-      )
-    } finally {
-      setIsHistoryLoading(false)
-    }
-  }
-
   useEffect(() => {
+    let isMounted = true
+
+    const loadHistory = async () => {
+      setIsHistoryLoading(true)
+
+      try {
+        const response = await fetch('/api/document/history', { cache: 'no-store' })
+        const payload = (await response.json().catch(() => null)) as HistoryResponse | null
+
+        if (response.ok && payload?.summaries && isMounted) {
+          setHistory(payload.summaries)
+        }
+      } catch (historyError) {
+        console.error('[dashboard] failed to load document history', historyError)
+      } finally {
+        if (isMounted) {
+          setIsHistoryLoading(false)
+        }
+      }
+    }
+
     void loadHistory()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const handleUpload = async (file: File) => {
@@ -138,6 +139,7 @@ export default function DashboardPage() {
 
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('language', language)
 
     try {
       const response = await fetch('/api/document/upload', {
@@ -209,6 +211,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           documentId,
           recommendationId: id,
+          language,
         }),
       })
 
